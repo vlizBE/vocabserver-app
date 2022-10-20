@@ -1,7 +1,20 @@
 {
   "version": "0.1",
   "prefixes": {
+    "voaf": "http://purl.org/vocommons/voaf",
+    "vann": "http://purl.org/vocab/vann/"
   },
   "resources": {
+    "vocabularies": {
+      "name": "vocabulary",
+      "class": "voaf:Vocabulary",
+      "attributes": {
+        "uri": {
+          "type": "string",
+          "predicate": "vann:preferredNamespaceUri"
+        }
+      },
+      "new-resource-base": "https://my-application.com/vocabularies/"
+    }
   }
 }

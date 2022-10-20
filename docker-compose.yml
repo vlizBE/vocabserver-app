@@ -31,3 +31,7 @@ services:
       - database:database
     volumes:
       - ./config/resources:/config
+  vocab-fetch:
+    build: ./services/vocab-fetch
+    volumes:
+      - ./data/vocab-fetch:/data

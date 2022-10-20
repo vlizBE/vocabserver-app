@@ -4,5 +4,10 @@
 !/data/db/toLoad
 !/data/db/toLoad/*
 
+# Vocab fetch files /data/vocab-fetch
+/data/vocab-fetch/*
+!/data/vocab-fetch/.gitkeep
+
 docker-compose.override.yml
 
+__pycache__/
