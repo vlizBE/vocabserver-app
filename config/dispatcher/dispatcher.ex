@@ -19,7 +19,7 @@ defmodule Dispatcher do
   # Run `docker-compose restart dispatcher` after updating
   # this file.
 
-  match "/download/*path", @any do
+  match "/fetch/*path", @any do
     forward conn, path, "http://vocab-fetch/"
   end
 

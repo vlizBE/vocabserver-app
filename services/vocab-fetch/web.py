@@ -7,11 +7,11 @@ from typing import List
 
 import requests
 from escape_helpers import sparql_escape, sparql_escape_uri
-from flask import request
 from helpers import generate_uuid, logger
 from helpers import query as sparql_query
 from helpers import update as sparql_update
 
+from file import construct_insert_file_query
 from job import attach_job_sources, create_job, run_job
 
 
@@ -29,6 +29,8 @@ class Prefixes:
         'nie', 'http://www.semanticdesktop.org/ontologies/2007/01/19/nie#')
     DC = make_prefix('dc', 'http://purl.org/dc/terms/')
     DBPEDIA = make_prefix('dbpedia', 'http://dbpedia.org/ontology/')
+    EXT = make_prefix('ext', 'http://mu.semte.ch/vocabularies/ext/')
+    RDFS = make_prefix('rdfs', 'http://www.w3.org/2000/01/rdf-schema#')
 
 
 def print(s: str):
@@ -50,144 +52,89 @@ def create_file(
     content: bytes,
     graph: str = MU_APPLICATION_GRAPH
 ):
-    file_format = 'some_format'  # TODO: Fill this in
-    file_size = len(content)
-    file_extension = 'ttl'
-
     upload_resource_uuid = generate_uuid()
-    upload_resource_name = resource_name
-    upload_resource_uri = f'{FILE_RESOURCE_BASE}{upload_resource_uuid}'
-
+    file_extension = 'ttl'
     file_resource_uuid = generate_uuid()
     file_resource_name = f'{file_resource_uuid}.{file_extension}'
-    file_resource_uri = file_to_shared_uri(file_resource_name)
 
     fh = open(f'{STORAGE_PATH}/{file_resource_name}', 'wb')
-
     now = datetime.now()
 
-    query_template = Template('''
-$prefixes
-
-INSERT DATA {
-    GRAPH <$graph> {
-        $upload_resource_uri a nfo:FileDataObject ;
-            nfo:fileName $upload_resource_name ;
-            mu:uuid $upload_resource_uuid ;
-            dc:format $file_format ;
-            nfo:fileSize $file_size ;
-            dbpedia:fileExtension $file_extension ;
-            dc:created $now ;
-            dc:modified $now .
-        
-        $file_resource_uri a nfo:FileDataObject ;
-            nie:dataSource $upload_resource_uri ;
-            nfo:fileName $file_resource_name ;
-            mu:uuid $file_resource_uuid ;
-            dc:format $file_format ;
-            nfo:fileSize $file_size ;
-            dbpedia:fileExtension $file_extension ;
-            dc:created $now ;
-            dc:modified $now .
+    file = {
+        'uri': f'{FILE_RESOURCE_BASE}{upload_resource_uuid}',
+        'uuid': upload_resource_uuid,
+        'name': resource_name,
+        'mimetype': 'text/plain',
+        'created': datetime.now(),
+        'size': len(content),
+        'extension': file_extension,
     }
-}
-''')
 
-    query_string = query_template.substitute(
-        prefixes='\n'.join([
-            Prefixes.NFO,
-            Prefixes.MU,
-            Prefixes.DC,
-            Prefixes.DBPEDIA,
-            Prefixes.NIE,
-        ]),
+    physical_file = {
+        'uri': file_to_shared_uri(file_resource_name),
+        'uuid': file_resource_uuid,
+        'name': file_resource_name,
+    }
 
-        graph=graph,
+    query_string = construct_insert_file_query(file, physical_file)
 
-        upload_resource_uuid=sparql_escape(upload_resource_uuid),
-        upload_resource_name=sparql_escape(resource_name),
-        upload_resource_uri=sparql_escape_uri(upload_resource_uri),
-
-        file_format=sparql_escape(file_format),
-        file_size=sparql_escape(file_size),
-        file_extension=sparql_escape(file_extension),
-
-        file_resource_uuid=sparql_escape(file_resource_uuid),
-        file_resource_name=sparql_escape(file_resource_name),
-        file_resource_uri=sparql_escape_uri(file_resource_uri),
-
-        now=sparql_escape(now),
-    )
-
+    # TODO Check query result before writing file to disk
     sparql_update(query_string)
 
     fh.write(content)
     fh.close()
 
 
-def fetch_vocab(sources: List[str], graph: str = MU_APPLICATION_GRAPH):
+def fetch_vocab_file(name, sources: List[str], graph: str = MU_APPLICATION_GRAPH):
+    r = requests.get(sources[0])
+    create_file(name, r.content)
 
+
+def vocab_fetch_url_query(vocab_uuid: str, graph=MU_APPLICATION_GRAPH):
     query_template = Template('''
 $prefixes
 
-SELECT ?url WHERE {
+SELECT DISTINCT ?url ?name WHERE {
     GRAPH $graph {
-        $vocab vann:preferredNamespaceUri ?url .
+        ?v a ext:VocabularyMeta ;
+           mu:uuid $vocab_uuid ;
+           ext:fetchUrl ?url ;
+           rdfs:label ?name .
     }
 }
 ''')
+
     query_string = query_template.substitute(
         prefixes='\n'.join([
             Prefixes.MU,
-            Prefixes.VANN,
-            Prefixes.DCAT,
+            Prefixes.EXT,
+            Prefixes.RDFS,
         ]),
-        graph=sparql_escape_uri(graph) if graph else '?g',
-        vocab=sparql_escape_uri(sources[0])
+        graph=sparql_escape_uri(graph),
+        vocab_uuid=sparql_escape(vocab_uuid),
     )
 
-    res = sparql_query(query_string)
-    if not res['results']['bindings']:
-        return []
-
-    url = res['results']['bindings'][0]['url']['value']
-
-    r = requests.get(url)
-    create_file(sources[1], r.content)
-
-    return [url]
+    return query_string
 
 
-@app.route('/fetch-vocab', methods=('POST',))
-def fetch_vocab_route():
-    #
-    if not request.json:
-        return "Missing data specifier", 400
-    query_string, job = create_job(
+@app.route('/<uuid>', methods=('POST',))
+def fetch_vocab_route(uuid: str):
+    job_query, job = create_job(
         'http://mu.semte.ch/vocabularies/ext/VocabFetchJob',
         'http://somejob-resource-base/'
     )
-    sparql_update(query_string)
-    sparql_update(
-        attach_job_sources(
-            job['uri'],
-            [
-                request.json['data']['url'],
-                request.json['data']['name']
-            ]
-        )
-    )
+    url_query = vocab_fetch_url_query(uuid)
+    url_res = sparql_query(url_query)
+    vocab_url = url_res['results']['bindings'][0]['url']['value']
+    vocab_name = url_res['results']['bindings'][0]['name']['value']
+    sparql_update(job_query)
+    sparql_update(attach_job_sources(job['uri'], [vocab_url]))
     run_job(
         job['uri'],
         MU_APPLICATION_GRAPH,
-        fetch_vocab,
+        lambda sources: fetch_vocab_file(vocab_name, sources),
         sparql_query,
         sparql_update
     )
 
     return ''
-
-
-@app.route('/hello')
-def hello():
-    return 'Hellooo'

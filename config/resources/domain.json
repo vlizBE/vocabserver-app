@@ -2,16 +2,21 @@
   "version": "0.1",
   "prefixes": {
     "voaf": "http://purl.org/vocommons/voaf",
-    "vann": "http://purl.org/vocab/vann/"
+    "vann": "http://purl.org/vocab/vann/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
   },
   "resources": {
     "vocabularies": {
       "name": "vocabulary",
-      "class": "voaf:Vocabulary",
+      "class": "ext:VocabularyMeta",
       "attributes": {
-        "uri": {
+        "url": {
+          "type": "url",
+          "predicate": "ext:fetchUrl"
+        },
+        "name": {
           "type": "string",
-          "predicate": "vann:preferredNamespaceUri"
+          "predicate": "rdfs:label"
         }
       },
       "new-resource-base": "https://my-application.com/vocabularies/"
