@@ -27,6 +27,10 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/vocabularies/"
   end
 
+  match "/vocab-download-jobs/*path", @any do
+    forward conn, path, "http://resource/vocab-download-jobs/"
+  end
+
   match "/*_", %{ last_call: true } do
     send_resp( conn, 404, "Route not found.  See config/dispatcher.ex" )
   end
