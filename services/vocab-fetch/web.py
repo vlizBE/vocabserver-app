@@ -14,10 +14,6 @@ from helpers import update as sparql_update
 from file import construct_insert_file_query
 from job import attach_job_sources, create_job, run_job
 
-
-def print(s: str):
-    app.logger.info(s)
-
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
 STORAGE_PATH = '/data'
