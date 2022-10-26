@@ -11,18 +11,13 @@ from helpers import generate_uuid, logger
 from helpers import query as sparql_query
 from helpers import update as sparql_update
 
-from file import construct_insert_file_query
+from file import construct_insert_file_query, file_to_shared_uri
 from job import attach_job_sources, create_job, run_job
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
 STORAGE_PATH = '/data'
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
-
-
-def file_to_shared_uri(file_name):
-    return f'share://{file_name}'
-
 
 def create_file(
     resource_name: str,
