@@ -15,29 +15,8 @@ from file import construct_insert_file_query
 from job import attach_job_sources, create_job, run_job
 
 
-def make_prefix(prefix: str, uri: str):
-    return f'PREFIX {prefix}: <{uri}>'
-
-
-class Prefixes:
-    MU = make_prefix('mu', 'http://mu.semte.ch/vocabularies/core/')
-    DCAT = make_prefix('dcat', 'http://www.w3.org/ns/dcat#')
-    VANN = make_prefix('vann', 'http://purl.org/vocab/vann/')
-    NFO = make_prefix(
-        'nfo', 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#')
-    NIE = make_prefix(
-        'nie', 'http://www.semanticdesktop.org/ontologies/2007/01/19/nie#')
-    DC = make_prefix('dc', 'http://purl.org/dc/terms/')
-    DBPEDIA = make_prefix('dbpedia', 'http://dbpedia.org/ontology/')
-    EXT = make_prefix('ext', 'http://mu.semte.ch/vocabularies/ext/')
-    RDFS = make_prefix('rdfs', 'http://www.w3.org/2000/01/rdf-schema#')
-    COGS = make_prefix('cogs', 'http://vocab.deri.ie/cogs#')
-    PROV = make_prefix('prov', 'http://www.w3.org/ns/prov#')
-
-
 def print(s: str):
     app.logger.info(s)
-
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
@@ -94,7 +73,10 @@ def download_vocab_file(name, sources: List[str], graph: str = MU_APPLICATION_GR
 
 def get_job_query(job_uuid: str, graph=MU_APPLICATION_GRAPH):
     query_template = Template('''
-$prefixes
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
 
 SELECT DISTINCT ?jobUri ?vocabName WHERE {
     GRAPH $graph {
@@ -107,12 +89,6 @@ SELECT DISTINCT ?jobUri ?vocabName WHERE {
 ''')
 
     query_string = query_template.substitute(
-        prefixes='\n'.join([
-            Prefixes.MU,
-            Prefixes.COGS,
-            Prefixes.RDFS,
-            Prefixes.PROV,
-        ]),
         graph=sparql_escape_uri(graph),
         job_uuid=sparql_escape(job_uuid),
     )
