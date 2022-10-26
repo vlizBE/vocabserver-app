@@ -31,6 +31,8 @@ class Prefixes:
     DBPEDIA = make_prefix('dbpedia', 'http://dbpedia.org/ontology/')
     EXT = make_prefix('ext', 'http://mu.semte.ch/vocabularies/ext/')
     RDFS = make_prefix('rdfs', 'http://www.w3.org/2000/01/rdf-schema#')
+    COGS = make_prefix('cogs', 'http://vocab.deri.ie/cogs#')
+    PROV = make_prefix('prov', 'http://www.w3.org/ns/prov#')
 
 
 def print(s: str):
@@ -85,21 +87,21 @@ def create_file(
     fh.close()
 
 
-def fetch_vocab_file(name, sources: List[str], graph: str = MU_APPLICATION_GRAPH):
+def download_vocab_file(name, sources: List[str], graph: str = MU_APPLICATION_GRAPH):
     r = requests.get(sources[0])
     create_file(name, r.content)
 
 
-def vocab_fetch_url_query(vocab_uuid: str, graph=MU_APPLICATION_GRAPH):
+def get_job_query(job_uuid: str, graph=MU_APPLICATION_GRAPH):
     query_template = Template('''
 $prefixes
 
-SELECT DISTINCT ?url ?name WHERE {
+SELECT DISTINCT ?jobUri ?vocabName WHERE {
     GRAPH $graph {
-        ?v a ext:VocabularyMeta ;
-           mu:uuid $vocab_uuid ;
-           ext:fetchUrl ?url ;
-           rdfs:label ?name .
+        ?jobUri a cogs:Job ;
+             mu:uuid $job_uuid ;
+             prov:used ?vocabUrl .
+        ?vocabUrl rdfs:label ?vocabName .
     }
 }
 ''')
@@ -107,32 +109,27 @@ SELECT DISTINCT ?url ?name WHERE {
     query_string = query_template.substitute(
         prefixes='\n'.join([
             Prefixes.MU,
-            Prefixes.EXT,
+            Prefixes.COGS,
             Prefixes.RDFS,
+            Prefixes.PROV,
         ]),
         graph=sparql_escape_uri(graph),
-        vocab_uuid=sparql_escape(vocab_uuid),
+        job_uuid=sparql_escape(job_uuid),
     )
 
     return query_string
 
 
-@app.route('/<uuid>', methods=('POST',))
-def fetch_vocab_route(uuid: str):
-    job_query, job = create_job(
-        'http://mu.semte.ch/vocabularies/ext/VocabFetchJob',
-        'http://somejob-resource-base/'
-    )
-    url_query = vocab_fetch_url_query(uuid)
-    url_res = sparql_query(url_query)
-    vocab_url = url_res['results']['bindings'][0]['url']['value']
-    vocab_name = url_res['results']['bindings'][0]['name']['value']
-    sparql_update(job_query)
-    sparql_update(attach_job_sources(job['uri'], [vocab_url]))
+@app.route('/<job_uuid>', methods=('POST',))
+def fetch_vocab_route(job_uuid: str):
+    job_query = get_job_query(job_uuid)
+    job_res = sparql_query(job_query)
+    binding = job_res['results']['bindings'][0]
     run_job(
-        job['uri'],
+        binding['jobUri']['value'],
         MU_APPLICATION_GRAPH,
-        lambda sources: fetch_vocab_file(vocab_name, sources),
+        lambda sources: download_vocab_file(
+            binding['vocabName']['value'], sources),
         sparql_query,
         sparql_update
     )

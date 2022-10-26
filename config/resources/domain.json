@@ -3,7 +3,10 @@
   "prefixes": {
     "voaf": "http://purl.org/vocommons/voaf",
     "vann": "http://purl.org/vocab/vann/",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cogs": "http://vocab.deri.ie/cogs#",
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#"
   },
   "resources": {
     "vocabularies": {
@@ -17,6 +20,22 @@
         "name": {
           "type": "string",
           "predicate": "rdfs:label"
+        }
+      },
+      "features": ["include-uri"],
+      "new-resource-base": "https://my-application.com/vocabularies/"
+    },
+    "vocab-download-jobs": {
+      "name": "vocab-download-job",
+      "class": "cogs:Job",
+      "attributes": {
+        "created": {
+          "type": "date",
+          "predicate": "dct:created"
+        },
+        "sources": {
+          "type": "url",
+          "predicate": "prov:used"
         }
       },
       "new-resource-base": "https://my-application.com/vocabularies/"
