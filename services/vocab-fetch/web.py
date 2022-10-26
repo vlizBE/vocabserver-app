@@ -1,66 +1,58 @@
 import os
-import sys
 from datetime import datetime
-from io import TextIOWrapper
 from string import Template
-from typing import List
 
 import requests
+
 from escape_helpers import sparql_escape, sparql_escape_uri
 from helpers import generate_uuid, logger
 from helpers import query as sparql_query
 from helpers import update as sparql_update
 
-from file import construct_insert_file_query, file_to_shared_uri
-from job import attach_job_sources, create_job, run_job
+from file import construct_insert_file_query, file_to_shared_uri, shared_uri_to_path
+from job import run_job
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
-STORAGE_PATH = '/data'
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
-def create_file(
-    resource_name: str,
-    content: bytes,
-    graph: str = MU_APPLICATION_GRAPH
-):
+def download_vocab_file(uri, graph: str = MU_APPLICATION_GRAPH):
+    headers = {"Accept": "text/turtle"}
+    r = requests.get(uri, headers=headers)
+    assert r.headers["Content-Type"] == "text/turtle" # TODO: better handling + negociating
+
     upload_resource_uuid = generate_uuid()
-    file_extension = 'ttl'
+    upload_resource_uri = f'{FILE_RESOURCE_BASE}{upload_resource_uuid}'
+    file_extension = "ttl" # TODO
     file_resource_uuid = generate_uuid()
     file_resource_name = f'{file_resource_uuid}.{file_extension}'
 
-    fh = open(f'{STORAGE_PATH}/{file_resource_name}', 'wb')
-    now = datetime.now()
+    file_resource_uri = file_to_shared_uri(file_resource_name)
 
     file = {
-        'uri': f'{FILE_RESOURCE_BASE}{upload_resource_uuid}',
+        'uri': upload_resource_uri,
         'uuid': upload_resource_uuid,
-        'name': resource_name,
+        'name': file_resource_name,
         'mimetype': 'text/plain',
         'created': datetime.now(),
-        'size': len(content),
+        'size': r.headers["Content-Length"],
         'extension': file_extension,
     }
-
     physical_file = {
-        'uri': file_to_shared_uri(file_resource_name),
+        'uri': file_resource_uri,
         'uuid': file_resource_uuid,
         'name': file_resource_name,
     }
+    
+    with open(shared_uri_to_path(file_resource_uri), 'wb') as f:
+        f.write(r.content)
 
-    query_string = construct_insert_file_query(file, physical_file)
+    query_string = construct_insert_file_query(file, physical_file, graph)
 
     # TODO Check query result before writing file to disk
     sparql_update(query_string)
 
-    fh.write(content)
-    fh.close()
-
-
-def download_vocab_file(name, sources: List[str], graph: str = MU_APPLICATION_GRAPH):
-    r = requests.get(sources[0])
-    create_file(name, r.content)
-
+    return file_resource_uri
 
 def get_job_uri(job_uuid: str, graph=MU_APPLICATION_GRAPH):
     query_template = Template('''
