@@ -62,19 +62,17 @@ def download_vocab_file(name, sources: List[str], graph: str = MU_APPLICATION_GR
     create_file(name, r.content)
 
 
-def get_job_query(job_uuid: str, graph=MU_APPLICATION_GRAPH):
+def get_job_uri(job_uuid: str, graph=MU_APPLICATION_GRAPH):
     query_template = Template('''
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX cogs: <http://vocab.deri.ie/cogs#>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 
-SELECT DISTINCT ?jobUri ?vocabName WHERE {
+SELECT DISTINCT ?job_uri WHERE {
     GRAPH $graph {
-        ?jobUri a cogs:Job ;
-             mu:uuid $job_uuid ;
-             prov:used ?vocabUrl .
-        ?vocabUrl rdfs:label ?vocabName .
+        ?job_uri a cogs:Job ;
+             mu:uuid $job_uuid .
     }
 }
 ''')
@@ -83,20 +81,20 @@ SELECT DISTINCT ?jobUri ?vocabName WHERE {
         graph=sparql_escape_uri(graph),
         job_uuid=sparql_escape(job_uuid),
     )
+    query_res = sparql_query(query_string)
+    return query_res['results']['bindings'][0]['job_uri']['value']
 
-    return query_string
-
-
-@app.route('/<job_uuid>', methods=('POST',))
-def fetch_vocab_route(job_uuid: str):
-    job_query = get_job_query(job_uuid)
-    job_res = sparql_query(job_query)
-    binding = job_res['results']['bindings'][0]
+@app.route('/<job_uuid>', methods=['POST'])
+def run_vocab_download(job_uuid: str):
+    try:
+        job_uri = get_job_uri(job_uuid)
+    except Exception:
+        logger.info(f"No job found by uuid ${job_uuid}")
+    
     run_job(
-        binding['jobUri']['value'],
+        job_uri,
         MU_APPLICATION_GRAPH,
-        lambda sources: download_vocab_file(
-            binding['vocabName']['value'], sources),
+        lambda sources: [download_vocab_file(sources[0], MU_APPLICATION_GRAPH)],
         sparql_query,
         sparql_update
     )
