@@ -19,7 +19,7 @@ services:
     image: redpencil/virtuoso:1.0.0
     environment:
       SPARQL_UPDATE: "true"
-      DEFAULT_GRAPH: "http://mu.semte.ch/application"
+      DEFAULT_GRAPH: "http://mu.semte.ch/graphs/public"
     ports:
       - "8890:8890"
     volumes:
@@ -31,6 +31,8 @@ services:
       - database:database
     volumes:
       - ./config/resources:/config
+    environment:
+      MU_APPLICATION_GRAPH: "http://mu.semte.ch/graphs/public"
   vocab-fetch:
     build: ./services/vocab-fetch
     volumes:
@@ -39,3 +41,4 @@ services:
     environment:
       MODE: "development"
       LOG_LEVEL: "DEBUG"
+      MU_APPLICATION_GRAPH: "http://mu.semte.ch/graphs/public"
