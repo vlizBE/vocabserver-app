@@ -23,12 +23,20 @@ defmodule Dispatcher do
     forward conn, [], "http://vocab-fetch/" <> id
   end
   
+  post "/content-unification-jobs/:id/run", @any do
+    forward conn, [], "http://content-unification/" <> id
+  end
+  
   match "/vocabularies/*path", @any do
     forward conn, path, "http://resource/vocabularies/"
   end
 
   match "/vocab-download-jobs/*path", @any do
     forward conn, path, "http://resource/vocab-download-jobs/"
+  end
+
+  match "/content-unification-jobs/*path", @any do
+    forward conn, path, "http://resource/content-unification-jobs/"
   end
 
   match "/*_", %{ last_call: true } do
