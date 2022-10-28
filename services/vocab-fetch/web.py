@@ -99,12 +99,6 @@ def run_vocab_download(job_uuid: str):
 
     return ''
 
-# TODO: remove function
-
-
-def print(s: str):
-    app.logger.warning(s)
-
 
 @app.route('/delta', methods=['POST'])
 def process_delta():
