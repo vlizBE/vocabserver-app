@@ -38,6 +38,10 @@
           "type": "url",
           "predicate": "prov:used"
         },
+        "results": {
+          "type": "url",
+          "predicate": "prov:generated"
+        },
         "status": {
           "type": "url",
           "predicate": "ext:status"
