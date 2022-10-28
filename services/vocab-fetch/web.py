@@ -55,19 +55,17 @@ def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     # TODO Check query result before writing file to disk
     sparql_update(query_string)
 
-    return file_resource_uri
+    return upload_resource_uri
 
 
 def get_job_uri(job_uuid: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX cogs: <http://vocab.deri.ie/cogs#>
-PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
 SELECT DISTINCT ?job_uri WHERE {
     GRAPH $graph {
-        ?job_uri a cogs:Job ;
+        ?job_uri a ext:VocabDownloadJob ;
              mu:uuid $job_uuid .
     }
 }

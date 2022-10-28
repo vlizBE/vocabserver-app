@@ -6,7 +6,8 @@
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "cogs": "http://vocab.deri.ie/cogs#",
     "dct": "http://purl.org/dc/terms/",
-    "prov": "http://www.w3.org/ns/prov#"
+    "prov": "http://www.w3.org/ns/prov#",
+    "ext": "http://mu.semte.ch/vocabularies/ext/"
   },
   "resources": {
     "vocabularies": {
@@ -25,8 +26,8 @@
       "features": ["include-uri"],
       "new-resource-base": "https://my-application.com/vocabularies/"
     },
-    "vocab-download-jobs": {
-      "name": "vocab-download-job",
+    "jobs": {
+      "name": "job",
       "class": "cogs:Job",
       "attributes": {
         "created": {
@@ -36,9 +37,31 @@
         "sources": {
           "type": "url",
           "predicate": "prov:used"
+        },
+        "results": {
+          "type": "url",
+          "predicate": "prov:generated"
+        },
+        "status": {
+          "type": "url",
+          "predicate": "ext:status"
         }
       },
-      "new-resource-base": "https://my-application.com/vocabularies/"
+      "new-resource-base": "https://my-application.com/jobs/"
+    },
+    "vocab-download-jobs": {
+      "name": "vocab-download-job",
+      "class": "ext:VocabDownloadJob",
+      "super": ["job"],
+      "attributes": {},
+      "new-resource-base": "https://my-application.com/vocab-download-jobs/"
+    },
+    "content-unification-jobs": {
+      "name": "content-unification-job",
+      "class": "ext:ContentUnificationJob",
+      "super": ["job"],
+      "attributes": {},
+      "new-resource-base": "https://my-application.com/content-unification-jobs/"
     }
   }
 }

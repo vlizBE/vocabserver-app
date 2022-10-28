@@ -55,3 +55,11 @@ services:
     environment:
       MODE: "development"
       LOG_LEVEL: "DEBUG"
+  content-unification:
+    build: ./services/content-unification
+    volumes:
+      - ./data/vocab-fetch:/share
+      - ./services/content-unification/:/app
+    environment:
+      MODE: "development"
+      LOG_LEVEL: "DEBUG"
