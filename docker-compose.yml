@@ -15,7 +15,7 @@ services:
       - resource:resource
     volumes:
       - ./config/dispatcher:/config
-  deltanotifier:
+  delta-notifier:
     image: semtech/mu-delta-notifier
     volumes:
       - ./config/delta:/config
