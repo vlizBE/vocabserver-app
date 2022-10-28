@@ -3,27 +3,30 @@ from datetime import datetime
 from string import Template
 
 import requests
-
 from escape_helpers import sparql_escape, sparql_escape_uri
+from flask import request
 from helpers import generate_uuid, logger
 from helpers import query as sparql_query
 from helpers import update as sparql_update
 
-from file import construct_insert_file_query, file_to_shared_uri, shared_uri_to_path
+from file import (construct_insert_file_query, file_to_shared_uri,
+                  shared_uri_to_path)
 from job import run_job
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
+
 def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     headers = {"Accept": "text/turtle"}
     r = requests.get(uri, headers=headers)
-    assert r.headers["Content-Type"] == "text/turtle" # TODO: better handling + negociating
+    # TODO: better handling + negociating
+    assert r.headers["Content-Type"] == "text/turtle"
 
     upload_resource_uuid = generate_uuid()
     upload_resource_uri = f'{FILE_RESOURCE_BASE}{upload_resource_uuid}'
-    file_extension = "ttl" # TODO
+    file_extension = "ttl"  # TODO
     file_resource_uuid = generate_uuid()
     file_resource_name = f'{file_resource_uuid}.{file_extension}'
 
@@ -43,7 +46,7 @@ def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
         'uuid': file_resource_uuid,
         'name': file_resource_name,
     }
-    
+
     with open(shared_uri_to_path(file_resource_uri), 'wb') as f:
         f.write(r.content)
 
@@ -54,7 +57,8 @@ def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
 
     return file_resource_uri
 
-def get_job_uri(job_uuid: str, graph: str =MU_APPLICATION_GRAPH):
+
+def get_job_uri(job_uuid: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -76,19 +80,38 @@ SELECT DISTINCT ?job_uri WHERE {
     query_res = sparql_query(query_string)
     return query_res['results']['bindings'][0]['job_uri']['value']
 
+
 @app.route('/<job_uuid>', methods=['POST'])
 def run_vocab_download(job_uuid: str):
     try:
         job_uri = get_job_uri(job_uuid)
     except Exception:
         logger.info(f"No job found by uuid ${job_uuid}")
-    
+
     run_job(
         job_uri,
         MU_APPLICATION_GRAPH,
-        lambda sources: [download_vocab_file(sources[0], MU_APPLICATION_GRAPH)],
+        lambda sources: [download_vocab_file(
+            sources[0], MU_APPLICATION_GRAPH)],
         sparql_query,
         sparql_update
     )
 
     return ''
+
+# TODO: remove function
+
+
+def print(s: str):
+    app.logger.warning(s)
+
+
+@app.route('/delta', methods=['POST'])
+def process_delta():
+    inserts = request.json[0]['inserts']
+    job_uuid = next(filter(
+        lambda x: x['predicate']['value'] == 'http://mu.semte.ch/vocabularies/core/uuid',
+        inserts
+    ))['object']['value']
+    run_vocab_download(job_uuid)
+    return '', 200

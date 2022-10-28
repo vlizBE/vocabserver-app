@@ -15,7 +15,23 @@ services:
       - resource:resource
     volumes:
       - ./config/dispatcher:/config
+  deltanotifier:
+    image: semtech/mu-delta-notifier
+    volumes:
+      - ./config/delta:/config
+    environment:
+      - DEBUG_DELTA_SEND=true
+      - DEBUG_DELTA_MATCH=true
+      - DEBUG_TRIPLE_MATCHES_SPEC=true
   database:
+    image: semtech/mu-authorization:0.6.0-beta.5
+    environment:
+      MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
+      LOG_OUTGOING_SPARQL_QUERIES: true
+      LOG_INCOMING_SPARQL_QUERIES: true
+    volumes:
+      - ./config/authorization:/config
+  triplestore:
     image: redpencil/virtuoso:1.0.0
     environment:
       SPARQL_UPDATE: "true"
