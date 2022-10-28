@@ -52,7 +52,7 @@ def download_vocab_file(uri, graph: str = MU_APPLICATION_GRAPH):
     # TODO Check query result before writing file to disk
     sparql_update(query_string)
 
-    return file_resource_uri
+    return upload_resource_uri
 
 def get_job_uri(job_uuid: str, graph=MU_APPLICATION_GRAPH):
     query_template = Template('''
