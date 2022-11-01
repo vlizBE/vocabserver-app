@@ -25,6 +25,8 @@ MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     headers = {"Accept": "text/turtle"}
     r = requests.get(uri, headers=headers)
+    if r.url != uri:
+        logger.info("You've been redirected. Probably want to replace url in db.")
     # TODO: better handling + negociating
     assert r.headers["Content-Type"] == "text/turtle"
 
