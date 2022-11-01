@@ -8,12 +8,16 @@ from flask import request
 from helpers import generate_uuid, logger
 from helpers import query as sparql_query
 from helpers import update as sparql_update
+from sudo_query import query_sudo, update_sudo
 
 from file import (construct_insert_file_query, file_to_shared_uri,
                   shared_uri_to_path)
 from job import run_job
 
 # Maybe make these configurable
+JOBS_GRAPH = "http://mu.semte.ch/graphs/public"
+FILES_GRAPH = "http://mu.semte.ch/graphs/public"
+
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
@@ -53,7 +57,7 @@ def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     query_string = construct_insert_file_query(file, physical_file, graph)
 
     # TODO Check query result before writing file to disk
-    sparql_update(query_string)
+    update_sudo(query_string)
 
     return upload_resource_uri
 
@@ -88,11 +92,11 @@ def run_vocab_download(job_uuid: str):
 
     run_job(
         job_uri,
-        MU_APPLICATION_GRAPH,
+        JOBS_GRAPH,
         lambda sources: [download_vocab_file(
-            sources[0], MU_APPLICATION_GRAPH)],
-        sparql_query,
-        sparql_update
+            sources[0], FILES_GRAPH)],
+        query_sudo,
+        update_sudo
     )
 
     return ''
