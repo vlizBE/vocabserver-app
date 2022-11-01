@@ -8,6 +8,10 @@
 /data/vocab-fetch/*
 !/data/vocab-fetch/.gitkeep
 
+# Search
+/data/elasticsearch
+/config/search/update-handler.store
+
 docker-compose.override.yml
 
 __pycache__/
