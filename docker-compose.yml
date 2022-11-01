@@ -24,7 +24,7 @@ services:
       - DEBUG_DELTA_MATCH=true
       - DEBUG_TRIPLE_MATCHES_SPEC=true
   database:
-    image: semtech/mu-authorization:0.6.0-beta.5
+    image: semtech/mu-authorization:0.6.0-beta.7
     environment:
       MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
       LOG_OUTGOING_SPARQL_QUERIES: "true"
