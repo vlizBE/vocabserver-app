@@ -39,6 +39,10 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/content-unification-jobs/"
   end
 
+  match "/concepts/search", @any do
+    forward conn, [], "http://search/concepts/search"
+  end
+
   match "/*_", %{ last_call: true } do
     send_resp( conn, 404, "Route not found.  See config/dispatcher.ex" )
   end

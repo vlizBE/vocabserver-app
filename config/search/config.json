@@ -1,0 +1,55 @@
+{
+  "batch_size": 128,
+  "max_batches": 0,
+  "attachments_path_base": "/data/",
+  "eager_indexing_sparql_query": false,
+  "additive_indexes": true,
+  "persist_indexes": true,
+  "update_wait_interval_minutes": 0,
+  "automatic_index_updates": true,
+  "eager_indexing_groups": [
+    [
+      {
+        "name": "clean",
+        "variables": []
+      }
+    ],
+    [
+      {
+        "name": "public",
+        "variables": []
+      }
+    ]
+  ],
+  "default_settings": {
+    "analysis": {
+      "analyzer": {
+        "myanalyzer": {
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  },
+  "types": [
+    {
+      "type": "concept",
+      "on_path": "concepts",
+      "rdf_type": "http://www.w3.org/2004/02/skos/core#Concept",
+      "properties": {
+        "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
+        "schemePrefLabel": [
+            "^http://www.w3.org/2004/02/skos/core#member",
+            "http://www.w3.org/2004/02/skos/core#prefLabel"
+          ]
+      },
+      "mappings": {
+        "properties": {
+        }
+      }
+    }
+  ]
+}

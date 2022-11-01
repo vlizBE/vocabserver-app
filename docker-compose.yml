@@ -47,6 +47,21 @@ services:
       - database:database
     volumes:
       - ./config/resources:/config
+  search:
+    image: semtech/mu-search:0.8.0
+    volumes:
+      - ./config/search:/config
+  elasticsearch:
+    image: semtech/mu-search-elastic-backend:1.0.0
+    volumes:
+      - ./data/elasticsearch/:/usr/share/elasticsearch/data
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65535
+        hard: 65535
+    environment:
+      - discovery.type=single-node
   vocab-fetch:
     build: ./services/vocab-fetch
     volumes:
