@@ -62,6 +62,7 @@ def run_vocab_unification_req(job_uuid: str):
         job_uri = get_job_uri(job_uuid)
     except Exception:
         logger.info(f"No job found by uuid ${job_uuid}")
+        return
     
     run_job(
         job_uri,
