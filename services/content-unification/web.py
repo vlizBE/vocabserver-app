@@ -53,8 +53,8 @@ def run_vocab_unification(file_uri: str, src_file_graph: str, target_graph: str)
     # Note that for now "unification" means no more than "dump to graph"
     # We might want to dump intermediary "unified" content to file before comitting to store
     g = load_vocab_file(file_uri, src_file_graph)
-    query_string = serialize_graph_to_sparql(g, target_graph)
-    update_sudo(query_string)
+    for query_string in serialize_graph_to_sparql(g, target_graph):
+        update_sudo(query_string)
 
 @app.route('/<job_uuid>', methods=['POST'])
 def run_vocab_unification_req(job_uuid: str):
