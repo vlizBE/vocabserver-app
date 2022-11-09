@@ -1,0 +1,46 @@
+{
+  "version": "0.1",
+  "prefixes": {
+    "void": "http://rdfs.org/ns/void#",
+    "vann": "http://purl.org/vocab/vann/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cogs": "http://vocab.deri.ie/cogs#",
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "ext": "http://mu.semte.ch/vocabularies/ext/"
+  },
+  "resources": {
+    "datasets": {
+      "name": "dataset",
+      "class": "void:Dataset",
+      "attributes": {
+        "property": {
+          "type": "url",
+          "predicate": "void:property"
+        },
+        "class": {
+          "type": "url",
+          "predicate": "void:class"
+        },
+        "entities": {
+          "type": "integer",
+          "predicate": "void:entities"
+        }
+      },
+      "relationships": {
+        "classes": {
+          "predicate": "void:classPartition",
+          "target": "dataset",
+          "cardinality": "many",
+        },
+        "properties": {
+          "predicate": "void:propertyPartition",
+          "target": "dataset",
+          "cardinality": "many",
+        }
+      },
+      "new-resource-base": "https://my-application.com/dataset/"
+    }
+  }
+
+}

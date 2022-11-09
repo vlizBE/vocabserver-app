@@ -78,3 +78,7 @@ services:
     environment:
       MODE: "development"
       LOG_LEVEL: "DEBUG"
+  uuid-generation:
+    image: kanselarij/uuid-generation-service:1.0.0
+    volumes:
+      - ./config/uuid-generation/:/config

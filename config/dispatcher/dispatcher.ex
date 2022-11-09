@@ -35,6 +35,10 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/vocabularies/"
   end
 
+  match "/datasets/*path", @any do
+    forward conn, path, "http://resource/datasets/"
+  end
+
   match "/vocab-download-jobs/*path", @any do
     forward conn, path, "http://resource/vocab-download-jobs/"
   end
