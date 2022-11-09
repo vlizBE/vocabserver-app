@@ -1,7 +1,8 @@
 import os
 from string import Template
 
-from rdflib import Graph
+from rdflib import Graph, URIRef
+from rdflib.void import generateVoID
 
 from escape_helpers import sparql_escape, sparql_escape_uri
 from helpers import generate_uuid, logger
@@ -16,9 +17,13 @@ from sparql_util import serialize_graph_to_sparql
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
+VOID_DATASET_RESOURCE_BASE = 'http://example-resource.com/void-dataset/'
 JOBS_GRAPH = "http://mu.semte.ch/graphs/public"
 UNIFICATION_TARGET_GRAPH = "http://mu.semte.ch/graphs/public"
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
+
+DS_GEN_JOB_TYPE = "http://mu.semte.ch/vocabularies/ext/DatasetGenerationJob"
+CONT_UN_JOB_TYPE = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
 
 def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     query_string = construct_get_file_query(uri, graph)
@@ -29,14 +34,14 @@ def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
 
     return g
 
-def get_job_uri(job_uuid: str, graph: str = MU_APPLICATION_GRAPH):
+def get_job_uri(job_uuid: str, job_type: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
 SELECT DISTINCT ?job_uri WHERE {
     GRAPH $graph {
-        ?job_uri a ext:ContentUnificationJob ;
+        ?job_uri a $job_type ;
              mu:uuid $job_uuid .
     }
 }
@@ -44,6 +49,7 @@ SELECT DISTINCT ?job_uri WHERE {
 
     query_string = query_template.substitute(
         graph=sparql_escape_uri(graph),
+        job_type=sparql_escape_uri(job_type),
         job_uuid=sparql_escape(job_uuid),
     )
     query_res = sparql_query(query_string)
@@ -56,12 +62,21 @@ def run_vocab_unification(file_uri: str, src_file_graph: str, target_graph: str)
     for query_string in serialize_graph_to_sparql(g, target_graph):
         update_sudo(query_string)
 
+def run_generate_void(file_uri: str, src_file_graph: str, target_graph: str):
+    g = load_vocab_file(file_uri, src_file_graph)
+    dataset_uuid = generate_uuid()
+    dataset_uri = VOID_DATASET_RESOURCE_BASE + dataset_uuid
+    void_g, dataset = generateVoID(g, dataset=URIRef(dataset_uri))
+    for query_string in serialize_graph_to_sparql(void_g, target_graph):
+        update_sudo(query_string)
+    return dataset_uri
+
 @app.route('/<job_uuid>', methods=['POST'])
 def run_vocab_unification_req(job_uuid: str):
     try:
-        job_uri = get_job_uri(job_uuid)
+        job_uri = get_job_uri(job_uuid, CONT_UN_JOB_TYPE)
     except Exception:
-        logger.info(f"No job found by uuid ${job_uuid}")
+        logger.info(f"No job found by uuid {job_uuid}")
         return
     
     run_job(
@@ -73,3 +88,20 @@ def run_vocab_unification_req(job_uuid: str):
     )
 
     return ''
+
+@app.route('/generate_void/<job_uuid>', methods=['POST'])
+def run_generate_void_job(job_uuid: str):
+    try:
+        job_uri = get_job_uri(job_uuid, DS_GEN_JOB_TYPE)
+    except Exception:
+        logger.info(f"No job found by uuid {job_uuid}")
+        return
+
+    run_job(
+        job_uri,
+        JOBS_GRAPH,
+        lambda sources: [run_generate_void(sources[0], JOBS_GRAPH, UNIFICATION_TARGET_GRAPH)],
+        query_sudo,
+        update_sudo
+    )
+    return ""

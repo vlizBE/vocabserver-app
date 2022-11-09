@@ -22,7 +22,11 @@ defmodule Dispatcher do
   post "/vocab-download-jobs/:id/run", @any do
     forward conn, [], "http://vocab-fetch/" <> id
   end
-  
+
+  post "/dataset-generation-jobs/:id/run", @any do
+    forward conn, [], "http://content-unification/generate_void/" <> id
+  end
+
   post "/content-unification-jobs/:id/run", @any do
     forward conn, [], "http://content-unification/" <> id
   end
@@ -37,6 +41,10 @@ defmodule Dispatcher do
 
   match "/content-unification-jobs/*path", @any do
     forward conn, path, "http://resource/content-unification-jobs/"
+  end
+
+  match "/dataset-generation-jobs/*path", @any do
+    forward conn, path, "http://resource/dataset-generation-jobs/"
   end
 
   match "/concepts/search", @any do

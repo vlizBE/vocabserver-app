@@ -56,6 +56,13 @@
       "attributes": {},
       "new-resource-base": "https://my-application.com/vocab-download-jobs/"
     },
+    "dataset-generation-jobs": {
+      "name": "dataset-generation-job",
+      "class": "ext:DatasetGenerationJob",
+      "super": ["job"],
+      "attributes": {},
+      "new-resource-base": "https://my-application.com/dataset-generation-jobs/"
+    },
     "content-unification-jobs": {
       "name": "content-unification-job",
       "class": "ext:ContentUnificationJob",
