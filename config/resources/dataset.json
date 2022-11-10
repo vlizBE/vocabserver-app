@@ -14,6 +14,22 @@
       "name": "dataset",
       "class": "void:Dataset",
       "attributes": {
+        "title": {
+          "type": "string",
+          "predicate": "dct:title"
+        },
+        "download-page": {
+          "type": "url",
+          "predicate": "foaf:page"
+        },
+        "modified": {
+          "type": "url",
+          "predicate": "dct:modified"
+        },
+        "dataDump": {
+          "type": "url",
+          "predicate": "void:dataDump"
+        },
         "property": {
           "type": "url",
           "predicate": "void:property"

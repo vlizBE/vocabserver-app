@@ -6,21 +6,35 @@ import requests
 from escape_helpers import sparql_escape, sparql_escape_uri
 from flask import request
 from helpers import generate_uuid, logger
-from helpers import query as sparql_query
-from helpers import update as sparql_update
+from helpers import query, update
 from sudo_query import query_sudo, update_sudo
 
-from file import (construct_insert_file_query, file_to_shared_uri,
-                  shared_uri_to_path)
+from rdflib import Graph, URIRef
+from rdflib.void import generateVoID
+
+from file import file_to_shared_uri, shared_uri_to_path
+from file import construct_get_file_query, construct_insert_file_query
 from job import run_job
+from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
+from sparql_util import serialize_graph_to_sparql
 
 # Maybe make these configurable
 JOBS_GRAPH = "http://mu.semte.ch/graphs/public"
 FILES_GRAPH = "http://mu.semte.ch/graphs/public"
+VOID_DATASET_GRAPH = "http://mu.semte.ch/graphs/public"
 
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
+VOID_DATASET_RESOURCE_BASE = 'http://example-resource.com/void-dataset/'
 
+def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
+    query_string = construct_get_file_query(uri, graph)
+    file_result = query_sudo(query_string)['results']['bindings'][0]
+
+    g = Graph()
+    g.parse(shared_uri_to_path(file_result['physicalFile']['value']))
+
+    return g
 
 def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     headers = {"Accept": "text/turtle"}
@@ -71,7 +85,7 @@ PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
 SELECT DISTINCT ?job_uri WHERE {
     GRAPH $graph {
-        ?job_uri a ext:VocabDownloadJob ;
+        ?job_uri a ext:DatasetDownloadJob ;
              mu:uuid $job_uuid .
     }
 }
@@ -81,12 +95,18 @@ SELECT DISTINCT ?job_uri WHERE {
         graph=sparql_escape_uri(graph),
         job_uuid=sparql_escape(job_uuid),
     )
-    query_res = sparql_query(query_string)
+    query_res = query(query_string)
     return query_res['results']['bindings'][0]['job_uri']['value']
 
+def redownload_dataset(dataset_uri):
+    dataset_result = query_sudo(get_dataset(dataset_uri))['results']['bindings'][0]
+    download_link = dataset_result['download_link']['value']
+    file_uri = download_vocab_file(download_link, FILES_GRAPH)
+    update_sudo(update_dataset_download(dataset_uri, file_uri, VOID_DATASET_GRAPH))
+    return dataset_uri
 
-@app.route('/<job_uuid>', methods=['POST'])
-def run_vocab_download(job_uuid: str):
+@app.route('dataset-download-job/<job_uuid>/run', methods=['POST'])
+def run_dataset_download(job_uuid: str):
     try:
         job_uri = get_job_uri(job_uuid)
     except Exception:
@@ -96,14 +116,21 @@ def run_vocab_download(job_uuid: str):
     run_job(
         job_uri,
         JOBS_GRAPH,
-        lambda sources: [download_vocab_file(
-            sources[0], FILES_GRAPH)],
+        lambda sources: [redownload_dataset(sources[0])],
         query_sudo,
         update_sudo
     )
 
     return ''
 
+@app.route('dataset/<dataset_uuid>/generate-structural-metadata', methods=['POST'])
+def run_dataset_download(dataset_uuid: str):
+    dataset_res = query(get_dataset_by_uuid(dataset_uuid))['results']['bindings'][0]
+    dataset_g = load_vocab_file(dataset_res['data_dump']['value'])
+    dataset_meta_g, dataset = generateVoID(g, dataset=URIRef(dataset_res['data_dump']['value']))
+    for query_string in serialize_graph_to_sparql(dataset_meta_g, MU_APPLICATION_GRAPH):
+        update(query_string)
+    return dataset_uuid
 
 @app.route('/delta', methods=['POST'])
 def process_delta():
@@ -112,5 +139,5 @@ def process_delta():
         lambda x: x['predicate']['value'] == 'http://mu.semte.ch/vocabularies/core/uuid',
         inserts
     ))['object']['value']
-    run_vocab_download(job_uuid)
+    run_dataset_download(job_uuid)
     return '', 200
