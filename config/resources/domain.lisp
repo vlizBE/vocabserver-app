@@ -2,6 +2,7 @@
 
 ;; reading in the domain.json
 (read-domain-file "domain.json")
+(read-domain-file "job.json")
 (read-domain-file "dataset.json")
 
 (define-resource file ()

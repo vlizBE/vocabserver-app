@@ -28,50 +28,6 @@
       },
       "features": ["include-uri"],
       "new-resource-base": "https://my-application.com/vocabularies/"
-    },
-    "jobs": {
-      "name": "job",
-      "class": "cogs:Job",
-      "attributes": {
-        "created": {
-          "type": "date",
-          "predicate": "dct:created"
-        },
-        "sources": {
-          "type": "url",
-          "predicate": "prov:used"
-        },
-        "results": {
-          "type": "url",
-          "predicate": "prov:generated"
-        },
-        "status": {
-          "type": "url",
-          "predicate": "ext:status"
-        }
-      },
-      "new-resource-base": "https://my-application.com/jobs/"
-    },
-    "vocab-download-jobs": {
-      "name": "vocab-download-job",
-      "class": "ext:VocabDownloadJob",
-      "super": ["job"],
-      "attributes": {},
-      "new-resource-base": "https://my-application.com/vocab-download-jobs/"
-    },
-    "dataset-generation-jobs": {
-      "name": "dataset-generation-job",
-      "class": "ext:DatasetGenerationJob",
-      "super": ["job"],
-      "attributes": {},
-      "new-resource-base": "https://my-application.com/dataset-generation-jobs/"
-    },
-    "content-unification-jobs": {
-      "name": "content-unification-job",
-      "class": "ext:ContentUnificationJob",
-      "super": ["job"],
-      "attributes": {},
-      "new-resource-base": "https://my-application.com/content-unification-jobs/"
     }
   }
 }
