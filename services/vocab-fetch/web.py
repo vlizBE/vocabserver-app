@@ -17,6 +17,7 @@ from file import construct_get_file_query, construct_insert_file_query
 from job import run_job
 from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
 from sparql_util import serialize_graph_to_sparql
+from format_to_mime import FORMAT_TO_MIME_EXT
 
 # Maybe make these configurable
 JOBS_GRAPH = "http://mu.semte.ch/graphs/public"
@@ -36,17 +37,19 @@ def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
 
     return g
 
-def download_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
-    headers = {"Accept": "text/turtle"}
-    r = requests.get(uri, headers=headers)
-    if r.url != uri:
+def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH):
+    mime_type, file_extension = FORMAT_TO_MIME_EXT[format]
+    headers = {"Accept": mime_type}
+    r = requests.get(url, headers=headers)
+    if r.url != url:
         logger.info("You've been redirected. Probably want to replace url in db.")
     # TODO: better handling + negociating
-    assert r.headers["Content-Type"] == "text/turtle"
+    logger.info(r.headers["Content-Type"])
+    logger.info(mime_type)
+    assert r.headers["Content-Type"].split(';')[0] == mime_type.split(';')[0]
 
     upload_resource_uuid = generate_uuid()
     upload_resource_uri = f'{FILE_RESOURCE_BASE}{upload_resource_uuid}'
-    file_extension = "ttl"  # TODO
     file_resource_uuid = generate_uuid()
     file_resource_name = f'{file_resource_uuid}.{file_extension}'
 
@@ -99,14 +102,15 @@ SELECT DISTINCT ?job_uri WHERE {
     return query_res['results']['bindings'][0]['job_uri']['value']
 
 def redownload_dataset(dataset_uri):
-    dataset_result = query_sudo(get_dataset(dataset_uri))['results']['bindings'][0]
-    download_link = dataset_result['download_link']['value']
-    file_uri = download_vocab_file(download_link, FILES_GRAPH)
+    dataset_result = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))['results']['bindings'][0]
+    download_link = dataset_result['download_url']['value']
+    file_format = dataset_result['format']['value']
+    file_uri = download_vocab_file(download_link, file_format, FILES_GRAPH)
     update_sudo(update_dataset_download(dataset_uri, file_uri, VOID_DATASET_GRAPH))
     return dataset_uri
 
-@app.route('dataset-download-job/<job_uuid>/run', methods=['POST'])
-def run_dataset_download(job_uuid: str):
+@app.route('/dataset-download-job/<job_uuid>/run', methods=['POST'])
+def run_dataset_download_route(job_uuid: str):
     try:
         job_uri = get_job_uri(job_uuid)
     except Exception:
@@ -123,9 +127,11 @@ def run_dataset_download(job_uuid: str):
 
     return ''
 
-@app.route('dataset/<dataset_uuid>/generate-structural-metadata', methods=['POST'])
-def run_dataset_download(dataset_uuid: str):
+@app.route('/dataset/<dataset_uuid>/generate-structural-metadata', methods=['POST'])
+def generate_dataset_structural_metadata(dataset_uuid: str):
     dataset_res = query(get_dataset_by_uuid(dataset_uuid))['results']['bindings'][0]
+    dataset_uri = dataset_res['dataset']['value']
+    dataset_res = query(get_dataset(dataset_uri))['results']['bindings'][0]
     dataset_g = load_vocab_file(dataset_res['data_dump']['value'])
     dataset_meta_g, dataset = generateVoID(g, dataset=URIRef(dataset_res['data_dump']['value']))
     for query_string in serialize_graph_to_sparql(dataset_meta_g, MU_APPLICATION_GRAPH):
@@ -135,9 +141,16 @@ def run_dataset_download(dataset_uuid: str):
 @app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
-    job_uuid = next(filter(
+    job_uri = next(filter(
         lambda x: x['predicate']['value'] == 'http://mu.semte.ch/vocabularies/core/uuid',
         inserts
-    ))['object']['value']
-    run_dataset_download(job_uuid)
+    ))['subject']['value']
+
+    run_job(
+        job_uri,
+        JOBS_GRAPH,
+        lambda sources: [redownload_dataset(sources[0])],
+        query_sudo,
+        update_sudo
+    )
     return '', 200

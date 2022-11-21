@@ -8,14 +8,16 @@ def get_dataset(dataset, graph=MU_APPLICATION_GRAPH):
     query_template = Template("""
 PREFIX void: <http://rdfs.org/ns/void#>
 PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
-SELECT ?dataset (?page AS ?download_link)
+SELECT (?page AS ?download_link) ?format ?download_url ?data_dump
 WHERE {
     GRAPH $graph {
-        BIND($dataset as ?dataset)
-        ?dataset
+        $dataset
             a void:Dataset ;
-            foaf:page ?page .
+            foaf:page ?download_url ;
+            void:feature ?format .
+        OPTIONAL { $dataset void:dataDump ?data_dump . }
     }
 }""")
     query_string = query_template.substitute(
@@ -29,12 +31,11 @@ def get_dataset_by_uuid(uuid, graph=MU_APPLICATION_GRAPH):
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX void: <http://rdfs.org/ns/void#>
 
-SELECT ?dataset data_dump
+SELECT ?dataset
 WHERE {
     GRAPH $graph {
         ?dataset a void:Dataset ;
-            mu:uuid $uuid ;
-            void:dataDump ?data_dump .
+            mu:uuid $uuid .
     }
 }""")
     query_string = query_template.substitute(
@@ -52,7 +53,7 @@ DELETE {
     ?dataset void:dataDump ?old_file .
 }
 INSERT {
-    ?dataset void:dataDump $new_file
+    ?dataset void:dataDump $new_file .
 }
 WHERE {
     BIND($dataset as ?dataset)

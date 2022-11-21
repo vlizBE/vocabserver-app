@@ -2,10 +2,8 @@
   "version": "0.1",
   "prefixes": {
     "void": "http://rdfs.org/ns/void#",
-    "vann": "http://purl.org/vocab/vann/",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-    "cogs": "http://vocab.deri.ie/cogs#",
     "dct": "http://purl.org/dc/terms/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
     "prov": "http://www.w3.org/ns/prov#",
     "ext": "http://mu.semte.ch/vocabularies/ext/"
   },
@@ -26,9 +24,13 @@
           "type": "url",
           "predicate": "dct:modified"
         },
-        "dataDump": {
+        "format": {
           "type": "url",
-          "predicate": "void:dataDump"
+          "predicate": "void:feature"
+        },
+        "sparql-endpoint": {
+          "type": "url",
+          "predicate": "void:sparqlEndpoint"
         },
         "property": {
           "type": "url",
@@ -47,16 +49,27 @@
         "classes": {
           "predicate": "void:classPartition",
           "target": "dataset",
-          "cardinality": "many",
+          "cardinality": "many"
         },
         "properties": {
           "predicate": "void:propertyPartition",
           "target": "dataset",
-          "cardinality": "many",
+          "cardinality": "many"
+        },
+        "data-dumps": {
+          "predicate": "void:dataDump",
+          "target": "file",
+          "cardinality": "many"
+        },
+        "vocabulary": {
+          "predicate": "ext:sourceDataset",
+          "target": "vocabulary",
+          "cardinality": "one",
+          "inverse": true
         }
       },
+      "features": ["include-uri"],
       "new-resource-base": "https://my-application.com/dataset/"
     }
   }
-
 }

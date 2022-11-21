@@ -14,13 +14,16 @@
       "name": "vocabulary",
       "class": "ext:VocabularyMeta",
       "attributes": {
-        "url": {
-          "type": "url",
-          "predicate": "ext:fetchUrl"
-        },
         "name": {
           "type": "string",
           "predicate": "rdfs:label"
+        }
+      },
+      "relationships": {
+        "source-dataset": {
+          "predicate": "ext:sourceDataset",
+          "target": "dataset",
+          "cardinality": "one"
         }
       },
       "features": ["include-uri"],
