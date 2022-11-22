@@ -2,10 +2,11 @@ defmodule Dispatcher do
   use Matcher
   define_accept_types [
     html: [ "text/html", "application/xhtml+html" ],
-    json: [ "application/json", "application/vnd.api+json" ]
+    json: [ "application/json", "application/vnd.api+json" ],
+    any: [ "*/*" ]
   ]
 
-  @any %{}
+  @any %{ accept: %{ any: true } }
   @json %{ accept: %{ json: true } }
   @html %{ accept: %{ html: true } }
 
@@ -41,6 +42,20 @@ defmodule Dispatcher do
 
   match "/concepts/search", @any do
     forward conn, [], "http://search/concepts/search"
+  end
+
+  match "/assets/*path", @any do
+    forward conn, path, "http://frontend/assets/"
+  end
+
+  match "/*_path", @html do
+    # *_path allows a path to be supplied, but will not yield
+    # an error that we don't use the path variable.
+    forward conn, [], "http://frontend/index.html"
+  end
+
+  match "/*_", %{ last_call: true, accept: %{ json: true } } do
+    send_resp( conn, 404, "{ \"error\": { \"code\": 404, \"message\": \"Route not found.  See config/dispatcher.ex\" } }" )
   end
 
   match "/*_", %{ last_call: true } do
