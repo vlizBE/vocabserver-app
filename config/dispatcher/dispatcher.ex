@@ -35,6 +35,14 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/vocabularies/"
   end
 
+  match "/shacl-property-shapes/*path", @any do
+    forward conn, path, "http://resource/shacl-property-shapes/"
+  end
+
+  match "/shacl-node-shapes/*path", @any do
+    forward conn, path, "http://resource/shacl-node-shapes/"
+  end
+
   match "/datasets/*path", @any do
     forward conn, path, "http://resource/datasets/"
   end

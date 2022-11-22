@@ -4,6 +4,7 @@
 (read-domain-file "domain.json")
 (read-domain-file "job.json")
 (read-domain-file "dataset.json")
+(read-domain-file "shacl.json")
 
 (define-resource file ()
   :class (s-prefix "nfo:FileDataObject")

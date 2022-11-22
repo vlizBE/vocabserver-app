@@ -1,0 +1,66 @@
+{
+  "version": "0.1",
+  "prefixes": {
+    "sh": "http://www.w3.org/ns/shacl#",
+    "ext": "http://mu.semte.ch/vocabularies/ext/"
+  },
+  "resources": {
+    "shacl-node-shapes": {
+      "name": "shacl-node-shape",
+      "class": "sh:NodeShape",
+      "attributes": {
+        "target-class": {
+          "type": "url",
+          "predicate": "sh:targetClass"
+        }
+      },
+      "relationships": {
+        "property-shapes": {
+          "predicate": "sh:property",
+          "target": "shacl-property-shape",
+          "cardinality": "many"
+        },
+        "vocabulary": {
+          "predicate": "ext:mappingShape",
+          "target": "vocabulary",
+          "cardinality": "one",
+          "inverse": true
+        }
+      },
+      "features": ["include-uri"],
+      "new-resource-base": "https://my-application.com/shacl-node-shape/"
+    },
+    "shacl-property-shapes": {
+      "name": "shacl-property-shape",
+      "class": "sh:PropertyShape",
+      "attributes": {
+        "path": {
+          "type": "string",
+          "predicate": "sh:path"
+        },
+        "name": {
+          "type": "string",
+          "predicate": "sh:name"
+        },
+        "description": {
+          "type": "string",
+          "predicate": "sh:description"
+        },
+        "minCount": {
+          "type": "integer",
+          "predicate": "sh:minCount"
+        }
+      },
+      "relationships": {
+        "node-shape": {
+          "predicate": "sh:property",
+          "target": "shacl-node-shape",
+          "cardinality": "one",
+          "inverse": true
+        }
+      },
+      "features": ["include-uri"],
+      "new-resource-base": "https://my-application.com/shacl-property-shape/"
+    }
+  }
+}
