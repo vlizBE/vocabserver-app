@@ -1,0 +1,8 @@
+services:
+  frontend:
+    profiles:
+      - donotstart
+
+  identifier:
+    ports:
+      - 80:80
