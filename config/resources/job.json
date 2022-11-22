@@ -40,12 +40,12 @@
       "attributes": {},
       "new-resource-base": "https://my-application.com/vocab-download-jobs/"
     },
-    "dataset-generation-jobs": {
-      "name": "dataset-generation-job",
-      "class": "ext:DatasetGenerationJob",
+    "metadata-extraction-jobs": {
+      "name": "metadata-extraction-job",
+      "class": "ext:MetadataExtractionJob",
       "super": ["job"],
       "attributes": {},
-      "new-resource-base": "https://my-application.com/dataset-generation-jobs/"
+      "new-resource-base": "https://my-application.com/metadata-extraction-jobs/"
     },
     "content-unification-jobs": {
       "name": "content-unification-job",

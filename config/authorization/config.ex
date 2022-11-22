@@ -25,7 +25,7 @@ defmodule Acl.UserGroups.Config do
                         "http://mu.semte.ch/vocabularies/ext/VocabularyMeta",
                         "http://rdfs.org/ns/void#Dataset",
                         "http://mu.semte.ch/vocabularies/ext/VocabDownloadJob",
-                        "http://mu.semte.ch/vocabularies/ext/DatasetGenerationJob",
+                        "http://mu.semte.ch/vocabularies/ext/MetadataExtractionJob",
                         "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob",
                         "http://vocab.deri.ie/cogs#Job"
                       ]

@@ -127,30 +127,44 @@ def run_dataset_download_route(job_uuid: str):
 
     return ''
 
-@app.route('/dataset/<dataset_uuid>/generate-structural-metadata', methods=['POST'])
-def generate_dataset_structural_metadata(dataset_uuid: str):
-    dataset_res = query(get_dataset_by_uuid(dataset_uuid))['results']['bindings'][0]
-    dataset_uri = dataset_res['dataset']['value']
-    dataset_res = query(get_dataset(dataset_uri))['results']['bindings'][0]
-    dataset_g = load_vocab_file(dataset_res['data_dump']['value'])
-    dataset_meta_g, dataset = generateVoID(g, dataset=URIRef(dataset_res['data_dump']['value']))
-    for query_string in serialize_graph_to_sparql(dataset_meta_g, MU_APPLICATION_GRAPH):
-        update(query_string)
-    return dataset_uuid
+def generate_dataset_structural_metadata(dataset_uri):
+    dataset_res = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))['results']['bindings'][0]
+    dataset_contents_g = load_vocab_file(dataset_res['data_dump']['value'], FILES_GRAPH)
+    dataset_meta_g, dataset = generateVoID(dataset_contents_g, dataset=URIRef(dataset_uri))
+    for query_string in serialize_graph_to_sparql(dataset_meta_g, VOID_DATASET_GRAPH):
+        update_sudo(query_string)
+    return dataset_uri
+
+VOCAB_DOWNLOAD_JOB = "http://mu.semte.ch/vocabularies/ext/VocabDownloadJob"
+METADATA_EXTRACTION_JOB = "http://mu.semte.ch/vocabularies/ext/MetadataExtractionJob"
 
 @app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
-    job_uri = next(filter(
-        lambda x: x['predicate']['value'] == 'http://mu.semte.ch/vocabularies/core/uuid',
+    job_triple = next(filter(
+        lambda x: x['predicate']['value'] == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
         inserts
-    ))['subject']['value']
-
-    run_job(
-        job_uri,
-        JOBS_GRAPH,
-        lambda sources: [redownload_dataset(sources[0])],
-        query_sudo,
-        update_sudo
-    )
-    return '', 200
+    ))
+    job_uri = job_triple['subject']['value']
+    job_type = job_triple['object']['value']
+    
+    if job_type == VOCAB_DOWNLOAD_JOB:
+        run_job(
+            job_uri,
+            JOBS_GRAPH,
+            lambda sources: [redownload_dataset(sources[0])],
+            query_sudo,
+            update_sudo
+        )
+        return '', 200
+    elif job_type == METADATA_EXTRACTION_JOB:
+        run_job(
+            job_uri,
+            JOBS_GRAPH,
+            lambda sources: [generate_dataset_structural_metadata(sources[0])],
+            query_sudo,
+            update_sudo
+        )
+        return '', 200
+    else:
+        return "Don't know how to handle job of type " + job_type, 500

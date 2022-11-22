@@ -47,8 +47,8 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/content-unification-jobs/"
   end
 
-  match "/dataset-generation-jobs/*path", @any do
-    forward conn, path, "http://resource/dataset-generation-jobs/"
+  match "/metadata-extraction-jobs/*path", @any do
+    forward conn, path, "http://resource/metadata-extraction-jobs/"
   end
 
   match "/concepts/search", @any do
