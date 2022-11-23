@@ -6,9 +6,9 @@ defmodule Dispatcher do
     any: [ "*/*" ]
   ]
 
-  @any %{ accept: %{ any: true } }
   @json %{ accept: %{ json: true } }
   @html %{ accept: %{ html: true } }
+  @any %{ accept: %{ any: true } }
 
   # In order to forward the 'themes' resource to the
   # resource service, use the following forward rule:
@@ -23,11 +23,11 @@ defmodule Dispatcher do
   post "/vocab-download-jobs/:id/run", @any do
     forward conn, [], "http://vocab-fetch/" <> id
   end
-  
+
   post "/content-unification-jobs/:id/run", @any do
     forward conn, [], "http://content-unification/" <> id
   end
-  
+
   match "/vocabularies/*path", @any do
     forward conn, path, "http://resource/vocabularies/"
   end
