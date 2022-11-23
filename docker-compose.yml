@@ -1,14 +1,15 @@
 version: '3.4'
 
 services:
+  frontend:
+    image: vocabsearch-frontend
   identifier:
     image: semtech/mu-identifier:1.10.0
     environment:
       SESSION_COOKIE_SECURE: "on"
+      DEFAULT_ACCESS_CONTROL_ALLOW_ORIGIN_HEADER: "*"
     links:
       - dispatcher:dispatcher
-    ports:
-      - "80:80"
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     links:
@@ -19,16 +20,10 @@ services:
     image: semtech/mu-delta-notifier:0.1.0
     volumes:
       - ./config/delta:/config
-    environment:
-      - DEBUG_DELTA_SEND=true
-      - DEBUG_DELTA_MATCH=true
-      - DEBUG_TRIPLE_MATCHES_SPEC=true
   database:
     image: semtech/mu-authorization:0.6.0-beta.7
     environment:
       MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
-      LOG_OUTGOING_SPARQL_QUERIES: "true"
-      LOG_INCOMING_SPARQL_QUERIES: "true"
     volumes:
       - ./config/authorization:/config
   triplestore:
@@ -36,8 +31,6 @@ services:
     environment:
       SPARQL_UPDATE: "true"
       DEFAULT_GRAPH: "http://mu.semte.ch/application"
-    ports:
-      - "8890:8890"
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
@@ -67,17 +60,11 @@ services:
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/vocab-fetch/:/app
-    environment:
-      MODE: "development"
-      LOG_LEVEL: "DEBUG"
   content-unification:
     build: ./services/content-unification
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/content-unification/:/app
-    environment:
-      MODE: "development"
-      LOG_LEVEL: "DEBUG"
   uuid-generation:
     image: kanselarij/uuid-generation-service:1.0.0
     volumes:

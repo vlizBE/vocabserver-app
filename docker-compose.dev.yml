@@ -1,0 +1,28 @@
+services:
+  frontend:
+    entrypoint: "echo 'service disabled'"
+    restart: no
+  identifier:
+    ports:
+      - 80:80
+  delta-notifier:
+    environment:
+      - DEBUG_DELTA_SEND=true
+      - DEBUG_DELTA_MATCH=true
+      - DEBUG_TRIPLE_MATCHES_SPEC=true
+  database:
+    environment:
+      LOG_OUTGOING_SPARQL_QUERIES: "true"
+      LOG_INCOMING_SPARQL_QUERIES: "true"
+  triplestore:
+    ports:
+      - "8890:8890"
+  vocab-fetch:
+    environment:
+      MODE: "development"
+      LOG_LEVEL: "DEBUG"
+  content-unification:
+    environment:
+      MODE: "development"
+      LOG_LEVEL: "DEBUG"
+

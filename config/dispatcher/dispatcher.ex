@@ -2,12 +2,13 @@ defmodule Dispatcher do
   use Matcher
   define_accept_types [
     html: [ "text/html", "application/xhtml+html" ],
-    json: [ "application/json", "application/vnd.api+json" ]
+    json: [ "application/json", "application/vnd.api+json" ],
+    any: [ "*/*" ]
   ]
 
-  @any %{}
-  @json %{ accept: %{ json: true } }
   @html %{ accept: %{ html: true } }
+  @json %{ accept: %{ json: true } }
+  @any %{ accept: %{ any: true } }
 
   # In order to forward the 'themes' resource to the
   # resource service, use the following forward rule:
@@ -19,48 +20,62 @@ defmodule Dispatcher do
   # Run `docker-compose restart dispatcher` after updating
   # this file.
 
-  post "/vocab-download-jobs/:id/run", @any do
+  post "/vocab-download-jobs/:id/run", @json do
     forward conn, [], "http://vocab-fetch/" <> id
   end
 
-  post "/dataset-generation-jobs/:id/run", @any do
+  post "/dataset-generation-jobs/:id/run", @json do
     forward conn, [], "http://content-unification/generate_void/" <> id
   end
 
-  post "/content-unification-jobs/:id/run", @any do
+  post "/content-unification-jobs/:id/run", @json do
     forward conn, [], "http://content-unification/" <> id
   end
-  
-  match "/vocabularies/*path", @any do
+
+  match "/vocabularies/*path", @json do
     forward conn, path, "http://resource/vocabularies/"
   end
 
-  match "/shacl-property-shapes/*path", @any do
+  match "/shacl-property-shapes/*path", @json do
     forward conn, path, "http://resource/shacl-property-shapes/"
   end
 
-  match "/shacl-node-shapes/*path", @any do
+  match "/shacl-node-shapes/*path", @json do
     forward conn, path, "http://resource/shacl-node-shapes/"
   end
 
-  match "/datasets/*path", @any do
+  match "/datasets/*path", @json do
     forward conn, path, "http://resource/datasets/"
   end
 
-  match "/vocab-download-jobs/*path", @any do
+  match "/vocab-download-jobs/*path", @json do
     forward conn, path, "http://resource/vocab-download-jobs/"
   end
 
-  match "/content-unification-jobs/*path", @any do
+  match "/content-unification-jobs/*path", @json do
     forward conn, path, "http://resource/content-unification-jobs/"
   end
 
-  match "/metadata-extraction-jobs/*path", @any do
+  match "/metadata-extraction-jobs/*path", @json do
     forward conn, path, "http://resource/metadata-extraction-jobs/"
   end
 
   match "/concepts/search", @any do
     forward conn, [], "http://search/concepts/search"
+  end
+
+  match "/assets/*path", @any do
+    forward conn, path, "http://frontend/assets/"
+  end
+
+  match "/*_path", @html do
+    # *_path allows a path to be supplied, but will not yield
+    # an error that we don't use the path variable.
+    forward conn, [], "http://frontend/index.html"
+  end
+
+  match "/*_", %{ last_call: true, accept: %{ json: true } } do
+    send_resp( conn, 404, "{ \"error\": { \"code\": 404, \"message\": \"Route not found.  See config/dispatcher.ex\" } }" )
   end
 
   match "/*_", %{ last_call: true } do
