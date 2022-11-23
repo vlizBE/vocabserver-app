@@ -6,8 +6,8 @@ defmodule Dispatcher do
     any: [ "*/*" ]
   ]
 
-  @json %{ accept: %{ json: true } }
   @html %{ accept: %{ html: true } }
+  @json %{ accept: %{ json: true } }
   @any %{ accept: %{ any: true } }
 
   # In order to forward the 'themes' resource to the
@@ -20,27 +20,27 @@ defmodule Dispatcher do
   # Run `docker-compose restart dispatcher` after updating
   # this file.
 
-  post "/vocab-download-jobs/:id/run", @any do
+  post "/vocab-download-jobs/:id/run", @json do
     forward conn, [], "http://vocab-fetch/" <> id
   end
 
-  post "/content-unification-jobs/:id/run", @any do
+  post "/content-unification-jobs/:id/run", @json do
     forward conn, [], "http://content-unification/" <> id
   end
 
-  match "/vocabularies/*path", @any do
+  match "/vocabularies/*path", @json do
     forward conn, path, "http://resource/vocabularies/"
   end
 
-  match "/vocab-download-jobs/*path", @any do
+  match "/vocab-download-jobs/*path", @json do
     forward conn, path, "http://resource/vocab-download-jobs/"
   end
 
-  match "/content-unification-jobs/*path", @any do
+  match "/content-unification-jobs/*path", @json do
     forward conn, path, "http://resource/content-unification-jobs/"
   end
 
-  match "/concepts/search", @any do
+  match "/concepts/search", @json do
     forward conn, [], "http://search/concepts/search"
   end
 
