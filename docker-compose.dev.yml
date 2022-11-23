@@ -1,12 +1,10 @@
 services:
   frontend:
-    profiles:
-      - donotstart
+    entrypoint: "echo 'service disabled'"
+    restart: no
   identifier:
     ports:
       - 80:80
-    environment:
-      DEFAULT_ACCESS_CONTROL_ALLOW_ORIGIN_HEADER: "*"
   delta-notifier:
     environment:
       - DEBUG_DELTA_SEND=true
