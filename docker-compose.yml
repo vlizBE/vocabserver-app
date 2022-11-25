@@ -69,3 +69,5 @@ services:
     image: kanselarij/uuid-generation-service:1.0.0
     volumes:
       - ./config/uuid-generation/:/config
+  # webcomponent:
+  #   image: vocabsearch-webcomponent
