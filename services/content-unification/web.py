@@ -68,7 +68,7 @@ def run_vocab_unification(vocab_uri):
     for query_string in serialize_graph_to_sparql(g, temp_named_graph):
         update_sudo(query_string)
     # We might want to dump intermediary unified content to file before committing to store
-    unification_query_string = unify_from_node_shape(vocab['mappingShape']['value'], VOCAB_GRAPH, temp_named_graph, VOCAB_GRAPH)
+    unification_query_string = unify_from_node_shape(vocab['mappingShape']['value'], vocab['sourceDataset']['value'], VOCAB_GRAPH, temp_named_graph, VOCAB_GRAPH)
     update_sudo(unification_query_string)
 
 @app.route('/<job_uuid>', methods=['POST'])
