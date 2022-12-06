@@ -21,7 +21,7 @@ services:
     volumes:
       - ./config/delta:/config
   database:
-    image: mu-auth-lang
+    image: semtech/mu-authorization:latest
     environment:
       MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
     volumes:
