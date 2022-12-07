@@ -47,3 +47,69 @@ WHERE {
     )
     return query_string
 
+def get_property_paths(node_shape, metadata_graph):
+    query_template = Template("""
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT DISTINCT ?sourceClass ?sourcePathString ?destClass ?destPath
+WHERE {
+    GRAPH $metadata_graph {
+        $node_shape
+            a sh:NodeShape ;
+            sh:targetClass ?sourceClass ;
+            sh:property ?propertyShape .
+        ?propertyShape
+            a sh:PropertyShape ;
+            sh:path ?sourcePathString .
+        BIND(skos:prefLabel as ?destPath)
+        BIND(skos:Concept as ?destClass)
+    }
+}
+""")
+    query_string = query_template.substitute(
+        metadata_graph=sparql_escape_uri(metadata_graph),
+        node_shape=sparql_escape_uri(node_shape),
+    )
+    return query_string
+
+def get_ununified_batch(dest_class,
+                        dest_predicate,
+                        source_class,
+                        source_path_string,
+                        source_graph,
+                        target_graph,
+                        batch_size):
+    query_template = Template("""
+CONSTRUCT {
+    ?s a $dest_class .
+    ?s $dest_predicate ?sourceValue .
+}
+WHERE {
+    GRAPH $target_graph {
+        FILTER NOT EXISTS {
+            ?s
+                a $dest_class ;
+                $dest_predicate ?sourceValue .
+        }
+    }
+    GRAPH $source_graph {
+        ?s
+            a $source_class ;
+            $source_path_string ?sourceValue .
+    }
+}
+LIMIT $batch_size
+""")
+    query_string = query_template.substitute(
+        dest_class=sparql_escape_uri(dest_class),
+        dest_predicate=sparql_escape_uri(dest_predicate),
+        source_class=sparql_escape_uri(source_class),
+        source_path_string=source_path_string, # !
+        source_graph=sparql_escape_uri(source_graph),
+        target_graph=sparql_escape_uri(target_graph),
+        batch_size=batch_size
+    )
+    return query_string
+
+
