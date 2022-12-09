@@ -2,6 +2,7 @@ import os
 from string import Template
 
 from rdflib import Graph, URIRef
+import requests
 
 from flask import request
 
@@ -39,6 +40,26 @@ def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
 
     return g
 
+import urllib.parse
+from requests.auth import HTTPDigestAuth
+
+def upload_file_to_graph(file, graph):
+    with open(file,'rb') as f:
+        headers = { 'Content-Type': 'text/turtle' }
+        url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
+        req = requests.put(url, auth=HTTPDigestAuth('dba', 'dba'), data=f, headers=headers)
+
+
+def load_vocab_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
+    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
+    query_string = construct_get_file_query(uri, metadata_graph)
+    logger.info('Uploading')
+    file_result = query_sudo(query_string)['results']['bindings'][0]
+
+    upload_file_to_graph(shared_uri_to_path(file_result['physicalFile']['value']), temp_named_graph)
+    logger.info('Uploaded')
+    return temp_named_graph
+
 def get_job_uri(job_uuid: str, job_type: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -63,10 +84,10 @@ SELECT DISTINCT ?job_uri WHERE {
 def run_vocab_unification(vocab_uri):
     vocab = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))['results']['bindings'][0]
     dataset = query_sudo(get_dataset(vocab['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings'][0]
-    g = load_vocab_file(dataset['data_dump']['value'], VOCAB_GRAPH)
-    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
-    for query_string in serialize_graph_to_sparql(g, temp_named_graph):
-        update_sudo(query_string)
+    # g = load_vocab_file(dataset['data_dump']['value'], VOCAB_GRAPH)
+    temp_named_graph = load_vocab_file_to_db(dataset['data_dump']['value'], VOCAB_GRAPH)
+    # for query_string in serialize_graph_to_sparql(g, temp_named_graph):
+    #     update_virtuoso(query_string)
     # We might want to dump intermediary unified content to file before committing to store
     prop_paths_qs = get_property_paths(vocab['mappingShape']['value'], VOCAB_GRAPH)
     prop_paths_res = query_sudo(prop_paths_qs)
