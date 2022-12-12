@@ -41,11 +41,7 @@
       "rdf_type": "http://www.w3.org/2004/02/skos/core#Concept",
       "properties": {
         "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
-        "sourceDataset": "http://purl.org/dc/terms/source",
-        "schemePrefLabel": [
-            "^http://www.w3.org/2004/02/skos/core#member",
-            "http://www.w3.org/2004/02/skos/core#prefLabel"
-          ]
+        "sourceDataset": "http://purl.org/dc/terms/source"
       },
       "mappings": {
         "properties": {
