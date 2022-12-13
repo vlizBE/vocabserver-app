@@ -34,8 +34,8 @@ MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 CONT_UN_JOB_TYPE = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
 
 def upload_file_to_graph(file, graph):
-    logger.info('Loading file {} to graph {}'.format(file_result['physicalFile']['value']), temp_named_graph))
-    with open(file,'rb') as f:
+    logger.info('Loading file {} to graph {}'.format(file, graph))
+    with open(file, 'rb') as f:
         headers = { 'Content-Type': 'text/turtle' }
         url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
         req = requests.put(url, auth=HTTPDigestAuth('dba', 'dba'), data=f, headers=headers)
