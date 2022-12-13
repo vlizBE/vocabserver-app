@@ -2,6 +2,7 @@ import os
 from string import Template
 
 from rdflib import Graph, URIRef
+import requests
 
 from flask import request
 
@@ -11,14 +12,14 @@ from helpers import query as sparql_query
 from helpers import update as sparql_update
 from sudo_query import query_sudo, update_sudo
 
-from sparql_util import serialize_graph_to_sparql
+from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph
 
 from job import run_job
 from file import construct_insert_file_query, construct_get_file_query, shared_uri_to_path
 from vocabulary import get_vocabulary
 from dataset import get_dataset
 
-from unification import unify_from_node_shape
+from unification import unify_from_node_shape, get_property_paths, get_ununified_batch
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
@@ -38,6 +39,26 @@ def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     g.parse(shared_uri_to_path(file_result['physicalFile']['value']))
 
     return g
+
+import urllib.parse
+from requests.auth import HTTPDigestAuth
+
+def upload_file_to_graph(file, graph):
+    with open(file,'rb') as f:
+        headers = { 'Content-Type': 'text/turtle' }
+        url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
+        req = requests.put(url, auth=HTTPDigestAuth('dba', 'dba'), data=f, headers=headers)
+
+
+def load_vocab_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
+    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
+    query_string = construct_get_file_query(uri, metadata_graph)
+    logger.info('Uploading')
+    file_result = query_sudo(query_string)['results']['bindings'][0]
+
+    upload_file_to_graph(shared_uri_to_path(file_result['physicalFile']['value']), temp_named_graph)
+    logger.info('Uploaded')
+    return temp_named_graph
 
 def get_job_uri(job_uuid: str, job_type: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''
@@ -63,13 +84,27 @@ SELECT DISTINCT ?job_uri WHERE {
 def run_vocab_unification(vocab_uri):
     vocab = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))['results']['bindings'][0]
     dataset = query_sudo(get_dataset(vocab['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings'][0]
-    g = load_vocab_file(dataset['data_dump']['value'], VOCAB_GRAPH)
-    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
-    for query_string in serialize_graph_to_sparql(g, temp_named_graph):
-        update_sudo(query_string)
+    # g = load_vocab_file(dataset['data_dump']['value'], VOCAB_GRAPH)
+    temp_named_graph = load_vocab_file_to_db(dataset['data_dump']['value'], VOCAB_GRAPH)
+    # for query_string in serialize_graph_to_sparql(g, temp_named_graph):
+    #     update_virtuoso(query_string)
     # We might want to dump intermediary unified content to file before committing to store
-    unification_query_string = unify_from_node_shape(vocab['mappingShape']['value'], vocab['sourceDataset']['value'], VOCAB_GRAPH, temp_named_graph, VOCAB_GRAPH)
-    update_sudo(unification_query_string)
+    prop_paths_qs = get_property_paths(vocab['mappingShape']['value'], VOCAB_GRAPH)
+    prop_paths_res = query_sudo(prop_paths_qs)
+    for path_props in prop_paths_res['results']['bindings']:
+        while True:
+            get_batch_qs = get_ununified_batch(path_props['destClass']['value'],
+                                               path_props['destPath']['value'],
+                                               path_props['sourceClass']['value'],
+                                               path_props['sourcePathString']['value'], # !
+                                               temp_named_graph, VOCAB_GRAPH, 10)
+            batch_res = query_sudo(get_batch_qs)
+            if not batch_res['results']['bindings']:
+                logger.info("End of batch")
+                break
+            g = sparql_construct_res_to_graph(batch_res)
+            for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
+                update_sudo(query_string)
 
 @app.route('/<job_uuid>', methods=['POST'])
 def run_vocab_unification_req(job_uuid: str):

@@ -1,3 +1,4 @@
 {
-    "http://rdfs.org/ns/void#Dataset": ["http://mu.semte.ch/graphs/public"]
+    "http://rdfs.org/ns/void#Dataset": ["http://mu.semte.ch/graphs/public"],
+    "http://www.w3.org/2004/02/skos/core#Concept": ["http://mu.semte.ch/graphs/public"]
 }
