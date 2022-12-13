@@ -96,7 +96,7 @@ def run_vocab_unification(vocab_uri):
             get_batch_qs = get_ununified_batch(path_props['destClass']['value'],
                                                path_props['destPath']['value'],
                                                path_props['sourceClass']['value'],
-                                               sparql_escape_uri(path_props['sourcePathString']['value']), # TODO
+                                               path_props['sourcePathString']['value'], # !
                                                temp_named_graph, VOCAB_GRAPH, 10)
             batch_res = query_sudo(get_batch_qs)
             if not batch_res['results']['bindings']:
