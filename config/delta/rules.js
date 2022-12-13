@@ -7,7 +7,7 @@ export default [
     },
     options: {
       resourceFormat: 'v0.0.1',
-      gracePeriod: 1000,
+      gracePeriod: 2000,
       ignoreFromSelf: true
     }
   },
@@ -95,7 +95,28 @@ export default [
     options: {
       resourceFormat: 'v0.0.1',
       gracePeriod: 250,
-      ignoreFromSelf: false
+      ignoreFromSelf: true
+    }
+  },
+  {
+    match: {
+      predicate: {
+        type: 'uri',
+        value: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+      },
+      object: {
+        type: 'uri',
+        value: 'http://www.w3.org/2004/02/skos/core#Concept'
+      }
+    },
+    callback: {
+      url: 'http://uuid-generation/delta',
+      method: 'POST'
+    },
+    options: {
+      resourceFormat: 'v0.0.1',
+      gracePeriod: 200,
+      ignoreFromSelf: true
     }
   }
 ];
