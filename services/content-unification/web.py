@@ -3,6 +3,8 @@ from string import Template
 
 from rdflib import Graph, URIRef
 import requests
+import urllib.parse
+from requests.auth import HTTPDigestAuth
 
 from flask import request
 
@@ -30,18 +32,6 @@ UNIFICATION_TARGET_GRAPH = "http://mu.semte.ch/graphs/public"
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
 CONT_UN_JOB_TYPE = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
-
-def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
-    query_string = construct_get_file_query(uri, graph)
-    file_result = query_sudo(query_string)['results']['bindings'][0]
-
-    g = Graph()
-    g.parse(shared_uri_to_path(file_result['physicalFile']['value']))
-
-    return g
-
-import urllib.parse
-from requests.auth import HTTPDigestAuth
 
 def upload_file_to_graph(file, graph):
     logger.info('Loading file {} to graph {}'.format(file_result['physicalFile']['value']), temp_named_graph))
