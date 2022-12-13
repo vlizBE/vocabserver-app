@@ -40,14 +40,10 @@
       "on_path": "concepts",
       "rdf_type": "http://www.w3.org/2004/02/skos/core#Concept",
       "properties": {
-<<<<<<< HEAD
         "prefLabel":  {
           "via": "http://www.w3.org/2004/02/skos/core#prefLabel",
           "type": "language-string"
         },
-=======
-        "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
->>>>>>> main
         "sourceDataset": "http://purl.org/dc/terms/source"
       },
       "mappings": {
