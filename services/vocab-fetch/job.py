@@ -3,6 +3,7 @@ import datetime
 from string import Template
 from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_escape_string
 from helpers import generate_uuid, logger
+import traceback
 
 ############################################################
 # TODO: keep this generic and extract into packaged module later
@@ -228,7 +229,7 @@ def run_job(job_uri, graph, runner_func, sparql_query, sparql_update):
         sparql_update(update_job_status(job_uri, STATUS_SUCCESS, graph))
         return generated
     except Exception as e:
-        logger.error(e)
+        traceback.print_exc()
         sparql_update(update_job_status(job_uri, STATUS_FAILED, graph))
 
     # end_time = time.time()
