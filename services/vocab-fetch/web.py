@@ -39,15 +39,6 @@ def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
 
 def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH):
     mime_type, file_extension = FORMAT_TO_MIME_EXT[format]
-    headers = {"Accept": mime_type}
-    r = requests.get(url, headers=headers)
-    if r.url != url:
-        logger.info("You've been redirected. Probably want to replace url in db.")
-    # TODO: better handling + negociating
-    logger.info(r.headers["Content-Type"])
-    logger.info(mime_type)
-    assert r.headers["Content-Type"].split(';')[0] == mime_type.split(';')[0]
-
     upload_resource_uuid = generate_uuid()
     upload_resource_uri = f'{FILE_RESOURCE_BASE}{upload_resource_uuid}'
     file_resource_uuid = generate_uuid()
@@ -55,13 +46,32 @@ def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH
 
     file_resource_uri = file_to_shared_uri(file_resource_name)
 
+    headers = {"Accept": mime_type}
+
+    with requests.get(url, headers=headers, stream=True) as res:
+        if res.url != url:
+            logger.info("You've been redirected. Probably want to replace url in db.")
+
+        with open(shared_uri_to_path(file_resource_uri), 'wb') as f:
+            for chunk in res.iter_content(chunk_size=None):
+                f.write(chunk)
+            
+            f.seek(0, 2)
+            file_size = f.tell()
+
+        # TODO: better handling + negociating
+        logger.info(f'Content-Type: {res.headers["Content-Type"]}')
+        logger.info(f'MIME-Type: {mime_type}')
+        assert res.headers["Content-Type"].split(';')[0] == mime_type.split(';')[0]
+
+
     file = {
         'uri': upload_resource_uri,
         'uuid': upload_resource_uuid,
         'name': file_resource_name,
         'mimetype': 'text/plain',
         'created': datetime.now(),
-        'size': r.headers["Content-Length"],
+        'size': file_size,
         'extension': file_extension,
     }
     physical_file = {
@@ -69,9 +79,6 @@ def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH
         'uuid': file_resource_uuid,
         'name': file_resource_name,
     }
-
-    with open(shared_uri_to_path(file_resource_uri), 'wb') as f:
-        f.write(r.content)
 
     query_string = construct_insert_file_query(file, physical_file, graph)
 
