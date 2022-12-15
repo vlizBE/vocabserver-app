@@ -21,7 +21,7 @@ services:
     volumes:
       - ./config/delta:/config
   database:
-    image: semtech/mu-authorization:0.6.0-beta.7
+    image: semtech/mu-authorization:latest
     environment:
       MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
     volumes:
@@ -41,7 +41,7 @@ services:
     volumes:
       - ./config/resources:/config
   search:
-    image: semtech/mu-search:0.8.0
+    image: semtech/mu-search:feature-language-strings
     volumes:
       - ./config/search:/config
   elasticsearch:
