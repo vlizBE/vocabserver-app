@@ -3,8 +3,6 @@ from string import Template
 
 from rdflib import Graph, URIRef
 import requests
-import urllib.parse
-from requests.auth import HTTPDigestAuth
 
 from flask import request
 
@@ -17,7 +15,6 @@ from sudo_query import query_sudo, update_sudo
 from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph
 
 from job import run_job
-from file import construct_insert_file_query, construct_get_file_query, shared_uri_to_path
 from vocabulary import get_vocabulary
 from dataset import get_dataset
 
@@ -32,20 +29,6 @@ UNIFICATION_TARGET_GRAPH = "http://mu.semte.ch/graphs/public"
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
 CONT_UN_JOB_TYPE = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
-
-def upload_file_to_graph(file, graph):
-    logger.info('Loading file {} to graph {}'.format(file, graph))
-    with open(file, 'rb') as f:
-        headers = { 'Content-Type': 'text/turtle' }
-        url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
-        req = requests.put(url, auth=HTTPDigestAuth('dba', 'dba'), data=f, headers=headers)
-
-def load_vocab_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
-    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
-    query_string = construct_get_file_query(uri, metadata_graph)
-    file_result = query_sudo(query_string)['results']['bindings'][0]
-    upload_file_to_graph(shared_uri_to_path(file_result['physicalFile']['value']), temp_named_graph)
-    return temp_named_graph
 
 def get_job_uri(job_uuid: str, job_type: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''

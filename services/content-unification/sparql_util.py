@@ -1,11 +1,22 @@
 from escape_helpers import sparql_escape_uri
+from helpers import logger, generate_uuid
+
+from sudo_query import query_sudo
+from file import construct_get_file_query, shared_uri_to_path
+
+import os
+from string import Template
+from requests.auth import HTTPDigestAuth
+import urllib.parse
+import requests
 from more_itertools import batched
 from rdflib.graph import Graph
 from rdflib.term import URIRef, Literal
-import tempfile
+
+TEMP_GRAPH_BASE = 'http://example-resource.com/graph/'
+MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
 BATCH_SIZE = 100
-
 # adapted from https://github.com/RDFLib/rdflib/issues/1704
 def serialize_graph_to_sparql(g, graph_name: str):
     for triples_batch in batched(g.triples((None, None, None)), BATCH_SIZE):
@@ -31,3 +42,17 @@ def sparql_construct_res_to_graph(res):
         o = json_to_term(binding['o'])
         g.add((s, p, o))
     return g
+
+def upload_file_to_graph(file, graph):
+    logger.info('Loading file {} to graph {}'.format(file, graph))
+    with open(file, 'rb') as f:
+        headers = { 'Content-Type': 'text/turtle' }
+        url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
+        req = requests.put(url, data=f, headers=headers)
+
+def load_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
+    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
+    query_string = construct_get_file_query(uri, metadata_graph)
+    file_result = query_sudo(query_string)['results']['bindings'][0]
+    upload_file_to_graph(shared_uri_to_path(file_result['physicalFile']['value']), temp_named_graph)
+    return temp_named_graph
