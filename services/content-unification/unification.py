@@ -112,4 +112,23 @@ LIMIT $batch_size
     )
     return query_string
 
+def delete_from_graph(subjects, graph):
+    query_template = Template("""
+WITH $graph
+DELETE {
+    ?s ?p ?o .
+}
+WHERE {
+    ?s ?p ?o .
+    VALUES ?s {
+        $subjects
+    }
+}
+""")
+    query_string = query_template.substitute(
+        subjects="\n        ".join([sparql_escape_uri(s) for s in subjects]),
+        graph=sparql_escape_uri(graph),
+    )
+    return query_string
+
 

@@ -49,9 +49,6 @@ def update_dataset_download(dataset, new_file, graph=MU_APPLICATION_GRAPH):
 PREFIX void: <http://rdfs.org/ns/void#>
 
 WITH $graph
-DELETE {
-    ?dataset void:dataDump ?old_file .
-}
 INSERT {
     ?dataset void:dataDump $new_file .
 }

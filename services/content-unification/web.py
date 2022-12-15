@@ -3,6 +3,7 @@ from string import Template
 
 from rdflib import Graph, URIRef
 import requests
+from more_itertools import batched
 
 from flask import request
 
@@ -12,13 +13,13 @@ from helpers import query as sparql_query
 from helpers import update as sparql_update
 from sudo_query import query_sudo, update_sudo
 
-from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph
+from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph, load_file_to_db, drop_graph, diff_graphs
 
 from job import run_job
 from vocabulary import get_vocabulary
 from dataset import get_dataset
 
-from unification import unify_from_node_shape, get_property_paths, get_ununified_batch
+from unification import unify_from_node_shape, get_property_paths, get_ununified_batch, delete_from_graph
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
@@ -53,8 +54,14 @@ SELECT DISTINCT ?job_uri WHERE {
 
 def run_vocab_unification(vocab_uri):
     vocab = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))['results']['bindings'][0]
-    dataset = query_sudo(get_dataset(vocab['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings'][0]
-    temp_named_graph = load_vocab_file_to_db(dataset['data_dump']['value'], VOCAB_GRAPH)
+    datasets = query_sudo(get_dataset(vocab['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings']
+    new_temp_named_graph = load_file_to_db(datasets[0]['data_dump']['value'], VOCAB_GRAPH)
+    if len(datasets) > 1: # previous dumps exist
+        old_temp_named_graph = load_file_to_db(datasets[1]['data_dump']['value'], VOCAB_GRAPH)
+        diff_subjects = diff_graphs(old_temp_named_graph, new_temp_named_graph)
+        for diff_subjects_batch in batched(diff_subjects, 10):
+            query_sudo(delete_from_graph(diff_subjects_batch, VOCAB_GRAPH))
+        drop_graph(old_temp_named_graph)
     prop_paths_qs = get_property_paths(vocab['mappingShape']['value'], VOCAB_GRAPH)
     prop_paths_res = query_sudo(prop_paths_qs)
     for path_props in prop_paths_res['results']['bindings']:
@@ -63,7 +70,7 @@ def run_vocab_unification(vocab_uri):
                                                path_props['destPath']['value'],
                                                path_props['sourceClass']['value'],
                                                path_props['sourcePathString']['value'], # !
-                                               temp_named_graph, VOCAB_GRAPH, 10)
+                                               new_temp_named_graph, VOCAB_GRAPH, 10)
             # We might want to dump intermediary unified content to file before committing to store
             batch_res = query_sudo(get_batch_qs)
             if not batch_res['results']['bindings']:
@@ -74,6 +81,8 @@ def run_vocab_unification(vocab_uri):
             g = sparql_construct_res_to_graph(batch_res)
             for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
                 update_sudo(query_string)
+    drop_graph(new_temp_named_graph)
+
 
 @app.route('/<job_uuid>', methods=['POST'])
 def run_vocab_unification_req(job_uuid: str):

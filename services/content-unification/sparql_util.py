@@ -62,3 +62,23 @@ def drop_graph(graph):
     url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
     req = requests.delete(url)
     return graph
+
+def diff_graphs(graph_old, graph_new):
+    query_res = query_sudo(Template("""
+SELECT DISTINCT ?s
+WHERE {
+    GRAPH $new_graph {
+        ?s ?p ?o .
+    }
+    FILTER NOT EXISTS {
+        GRAPH $old_graph {
+            ?s ?p ?o .
+        }
+    }
+}
+""").substitute(
+    old_graph=sparql_escape_uri(graph_old),
+    new_graph=sparql_escape_uri(graph_new),
+))
+    s = [b['s']['value'] for b in query_res['results']['bindings']]
+    return s
