@@ -48,7 +48,16 @@
       },
       "mappings": {
         "properties": {
-          "sourceDataset": { "type": "keyword" }
+          "sourceDataset": { "type": "keyword" },
+          "prefLabel": {
+            "properties": {
+              "default": { "type": "text" },
+              "en": { "type": "text" },
+              "nl": { "type": "text"},
+              "fr": { "type": "text"},
+              "de": { "type": "text"}
+            }
+          }
         }
       }
     }
