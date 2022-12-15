@@ -56,3 +56,9 @@ def load_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
     file_result = query_sudo(query_string)['results']['bindings'][0]
     upload_file_to_graph(shared_uri_to_path(file_result['physicalFile']['value']), temp_named_graph)
     return temp_named_graph
+
+def drop_graph(graph):
+    logger.info('Dropping graph {}'.format(graph))
+    url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
+    req = requests.delete(url)
+    return graph
