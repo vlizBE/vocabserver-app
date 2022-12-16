@@ -82,6 +82,8 @@ def get_ununified_batch(dest_class,
                         target_graph,
                         batch_size):
     query_template = Template("""
+PREFIX dct: <http://purl.org/dc/terms/>
+
 CONSTRUCT {
     ?s a $dest_class .
     ?s $dest_predicate ?sourceValue .
