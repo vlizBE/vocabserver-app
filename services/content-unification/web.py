@@ -68,6 +68,7 @@ def run_vocab_unification(vocab_uri):
         while True:
             get_batch_qs = get_ununified_batch(path_props['destClass']['value'],
                                                path_props['destPath']['value'],
+                                               vocab['sourceDataset']['value'],
                                                path_props['sourceClass']['value'],
                                                path_props['sourcePathString']['value'], # !
                                                new_temp_named_graph, VOCAB_GRAPH, 10)

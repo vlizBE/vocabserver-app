@@ -75,6 +75,7 @@ WHERE {
 
 def get_ununified_batch(dest_class,
                         dest_predicate,
+                        source_dataset,
                         source_class,
                         source_path_string,
                         source_graph,
@@ -84,6 +85,7 @@ def get_ununified_batch(dest_class,
 CONSTRUCT {
     ?s a $dest_class .
     ?s $dest_predicate ?sourceValue .
+    ?s dct:source $source_dataset .
 }
 WHERE {
     GRAPH $target_graph {
@@ -104,6 +106,7 @@ LIMIT $batch_size
     query_string = query_template.substitute(
         dest_class=sparql_escape_uri(dest_class),
         dest_predicate=sparql_escape_uri(dest_predicate),
+        source_dataset=sparql_escape_uri(source_dataset),
         source_class=sparql_escape_uri(source_class),
         source_path_string=source_path_string, # !
         source_graph=sparql_escape_uri(source_graph),
