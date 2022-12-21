@@ -11,7 +11,7 @@ from escape_helpers import sparql_escape, sparql_escape_uri
 from helpers import generate_uuid, logger
 from helpers import query as sparql_query
 from helpers import update as sparql_update
-from sudo_query import query_sudo, update_sudo
+from sudo_query import query_sudo, auth_update_sudo as update_sudo
 
 from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph, load_file_to_db, drop_graph, diff_graphs
 

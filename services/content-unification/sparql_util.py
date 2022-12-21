@@ -1,7 +1,7 @@
 from escape_helpers import sparql_escape_uri
 from helpers import logger, generate_uuid
 
-from sudo_query import query_sudo
+from sudo_query import query_sudo, update_sudo as update_virtuoso
 from file import construct_get_file_query, shared_uri_to_path
 
 import os
@@ -44,11 +44,10 @@ def sparql_construct_res_to_graph(res):
     return g
 
 def upload_file_to_graph(file, graph):
-    logger.info('Loading file {} to graph {}'.format(file, graph))
-    with open(file, 'rb') as f:
-        headers = { 'Content-Type': 'text/turtle' }
-        url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
-        req = requests.put(url, data=f, headers=headers)
+    g = Graph()
+    g.parse(file)
+    for query_string in serialize_graph_to_sparql(g, graph):
+        update_virtuoso(query_string)
 
 def load_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
     temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
