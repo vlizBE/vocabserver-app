@@ -59,10 +59,7 @@ def load_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
     return temp_named_graph
 
 def drop_graph(graph):
-    logger.info('Dropping graph {}'.format(graph))
-    url = 'http://triplestore:8890/sparql-graph-crud?graph-uri=' + urllib.parse.quote_plus(graph)
-    req = requests.delete(url)
-    return graph
+    update_virtuoso("DROP SILENT GRAPH {}".format(sparql_escape_uri(graph)))
 
 def diff_graphs(graph_old, graph_new):
     query_res = query_sudo(Template("""
