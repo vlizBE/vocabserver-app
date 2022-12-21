@@ -90,8 +90,8 @@ CONSTRUCT {
     ?s dct:source $source_dataset .
 }
 WHERE {
-    GRAPH $target_graph {
-        FILTER NOT EXISTS {
+    FILTER NOT EXISTS {
+        GRAPH $target_graph {
             ?s
                 a $dest_class ;
                 $dest_predicate ?sourceValue .
