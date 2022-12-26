@@ -61,8 +61,8 @@ WHERE {
             sh:property ?propertyShape .
         ?propertyShape
             a sh:PropertyShape ;
+            sh:description ?destPath ;
             sh:path ?sourcePathString .
-        BIND(skos:prefLabel as ?destPath)
         BIND(skos:Concept as ?destClass)
     }
 }
