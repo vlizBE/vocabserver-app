@@ -58,7 +58,8 @@
               "fr": { "type": "text"},
               "de": { "type": "text"}
             }
-          }
+          },
+          "tagLabels": { "type": "keyword" }
         }
       }
     }
