@@ -15,10 +15,10 @@
         }
       },
       "relationships": {
-        "source-dataset": {
+        "source-datasets": {
           "predicate": "ext:sourceDataset",
           "target": "dataset",
-          "cardinality": "one"
+          "cardinality": "many"
         },
         "mapping-shape": {
           "predicate": "ext:mappingShape",
