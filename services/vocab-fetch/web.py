@@ -39,6 +39,8 @@ def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
 
 def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH):
     mime_type, file_extension = FORMAT_TO_MIME_EXT[format]
+    accept_string = ', '.join(
+        value[0] + (';q=1.0' if key == format else ';q=0.1') for key, value in FORMAT_TO_MIME_EXT.items())
     upload_resource_uuid = generate_uuid()
     upload_resource_uri = f'{FILE_RESOURCE_BASE}{upload_resource_uuid}'
     file_resource_uuid = generate_uuid()
@@ -46,24 +48,23 @@ def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH
 
     file_resource_uri = file_to_shared_uri(file_resource_name)
 
-    headers = {"Accept": mime_type}
+    headers = {"Accept": accept_string}
 
     with requests.get(url, headers=headers, stream=True) as res:
         if res.url != url:
-            logger.info("You've been redirected. Probably want to replace url in db.")
-
-        with open(shared_uri_to_path(file_resource_uri), 'wb') as f:
-            for chunk in res.iter_content(chunk_size=None):
-                f.write(chunk)
-            
-            f.seek(0, 2)
-            file_size = f.tell()
+            logger.info(
+                "You've been redirected. Probably want to replace url in db.")
 
         # TODO: better handling + negociating
         logger.info(f'Content-Type: {res.headers["Content-Type"]}')
         logger.info(f'MIME-Type: {mime_type}')
-        assert res.headers["Content-Type"].split(';')[0] == mime_type.split(';')[0]
 
+        with open(shared_uri_to_path(file_resource_uri), 'wb') as f:
+            for chunk in res.iter_content(chunk_size=None):
+                f.write(chunk)
+
+            f.seek(0, 2)
+            file_size = f.tell()
 
     file = {
         'uri': upload_resource_uri,
