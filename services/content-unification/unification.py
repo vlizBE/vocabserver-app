@@ -4,6 +4,7 @@ from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_esc
 
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
+
 def unify_from_node_shape(node_shape, source_dataset, metadata_graph, source_graph, target_graph):
     query_template = Template("""
 PREFIX void: <http://rdfs.org/ns/void#>
@@ -47,6 +48,7 @@ WHERE {
     )
     return query_string
 
+
 def get_property_paths(node_shape, metadata_graph):
     query_template = Template("""
 PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -72,6 +74,7 @@ WHERE {
         node_shape=sparql_escape_uri(node_shape),
     )
     return query_string
+
 
 def get_ununified_batch(dest_class,
                         dest_predicate,
@@ -110,12 +113,13 @@ LIMIT $batch_size
         dest_predicate=sparql_escape_uri(dest_predicate),
         source_dataset=sparql_escape_uri(source_dataset),
         source_class=sparql_escape_uri(source_class),
-        source_path_string=source_path_string, # !
+        source_path_string=source_path_string,  # !
         source_graph=sparql_escape_uri(source_graph),
         target_graph=sparql_escape_uri(target_graph),
         batch_size=batch_size
     )
     return query_string
+
 
 def delete_from_graph(subjects, graph):
     query_template = Template("""
@@ -137,3 +141,56 @@ WHERE {
     return query_string
 
 
+def remove_vocab_concepts(vocab_uuid: str, graph: str):
+    query_template = Template("""
+PREFIX void: <http://rdfs.org/ns/void#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+
+DELETE {
+  GRAPH $graph {
+    ?concept ?conceptPred ?conceptObj .
+  }
+}
+WHERE {
+  GRAPH $graph {
+    ?vocabMeta a ext:VocabularyMeta ;
+                 mu:uuid $vocab_uuid .
+    ?vocabMeta ?vocabMetaPred ?vocabMetaObj .
+    ?vocabMeta ext:sourceDataset ?sourceDataset .
+    ?concept dct:source ?sourceDataset .
+    ?concept ?conceptPred ?conceptObj .
+  }
+}
+    """)
+    query_string = query_template.substitute(
+        graph=sparql_escape_uri(graph),
+        vocab_uuid=sparql_escape_string(vocab_uuid),
+    )
+    return query_string
+
+def remove_vocab_meta(vocab_uuid: str, graph: str):
+    query_template = Template("""
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+
+DELETE {
+  GRAPH $graph {
+    ?vocabMeta ?vocabMetaPred ?vocabMetaObj .
+  }
+}
+WHERE {
+  GRAPH $graph {
+    ?vocabMeta a ext:VocabularyMeta ;
+                 mu:uuid $vocab_uuid .
+    ?vocabMeta ?vocabMetaPred ?vocabMetaObj .
+  }
+}
+    """)
+    query_string = query_template.substitute(
+        graph=sparql_escape_uri(graph),
+        vocab_uuid=sparql_escape_string(vocab_uuid),
+    )
+    return query_string

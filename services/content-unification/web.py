@@ -104,7 +104,15 @@ def run_vocab_unification_req(job_uuid: str):
 
     return ''
 
-@app.route('/delta', methods=['POST'])
+
+@app.route('/delete-vocabulary/<vocab_uuid>', methods=('POST',))
+def delete_vocabulary(vocab_uuid: str):
+    update_sudo(remove_vocab_concepts(vocab_uuid, VOCAB_GRAPH))
+    update_sudo(remove_vocab_meta(vocab_uuid, VOCAB_GRAPH))
+    return '', 200
+
+
+@ app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
     job_triple = next(filter(
