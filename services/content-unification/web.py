@@ -53,36 +53,37 @@ SELECT DISTINCT ?job_uri WHERE {
     return query_res['results']['bindings'][0]['job_uri']['value']
 
 def run_vocab_unification(vocab_uri):
-    vocab = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))['results']['bindings'][0]
-    datasets = query_sudo(get_dataset(vocab['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings']
-    new_temp_named_graph = load_file_to_db(datasets[0]['data_dump']['value'], VOCAB_GRAPH)
-    if len(datasets) > 1: # previous dumps exist
-        old_temp_named_graph = load_file_to_db(datasets[1]['data_dump']['value'], VOCAB_GRAPH)
-        diff_subjects = diff_graphs(old_temp_named_graph, new_temp_named_graph)
-        for diff_subjects_batch in batched(diff_subjects, 10):
-            query_sudo(delete_from_graph(diff_subjects_batch, VOCAB_GRAPH))
-        drop_graph(old_temp_named_graph)
-    prop_paths_qs = get_property_paths(vocab['mappingShape']['value'], VOCAB_GRAPH)
-    prop_paths_res = query_sudo(prop_paths_qs)
-    for path_props in prop_paths_res['results']['bindings']:
-        while True:
-            get_batch_qs = get_ununified_batch(path_props['destClass']['value'],
-                                               path_props['destPath']['value'],
-                                               vocab['sourceDataset']['value'],
-                                               path_props['sourceClass']['value'],
-                                               path_props['sourcePathString']['value'], # !
-                                               new_temp_named_graph, VOCAB_GRAPH, 10)
-            # We might want to dump intermediary unified content to file before committing to store
-            batch_res = query_sudo(get_batch_qs)
-            if not batch_res['results']['bindings']:
-                logger.info("Finished unification")
-                break
-            else:
-                logger.info("Running unification batch")
-            g = sparql_construct_res_to_graph(batch_res)
-            for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
-                update_sudo(query_string)
-    drop_graph(new_temp_named_graph)
+    vocab_sources = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))['results']['bindings']
+    for vocab_source in vocab_sources:
+        dataset_versions = query_sudo(get_dataset(vocab_source['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings']
+        new_temp_named_graph = load_file_to_db(dataset_versions[0]['data_dump']['value'], VOCAB_GRAPH)
+        if len(dataset_versions) > 1: # previous dumps exist
+            old_temp_named_graph = load_file_to_db(dataset_versions[1]['data_dump']['value'], VOCAB_GRAPH)
+            diff_subjects = diff_graphs(old_temp_named_graph, new_temp_named_graph)
+            for diff_subjects_batch in batched(diff_subjects, 10):
+                query_sudo(delete_from_graph(diff_subjects_batch, VOCAB_GRAPH))
+            drop_graph(old_temp_named_graph)
+        prop_paths_qs = get_property_paths(vocab_source['mappingShape']['value'], VOCAB_GRAPH)
+        prop_paths_res = query_sudo(prop_paths_qs)
+        for path_props in prop_paths_res['results']['bindings']:
+            while True:
+                get_batch_qs = get_ununified_batch(path_props['destClass']['value'],
+                                                   path_props['destPath']['value'],
+                                                   vocab_source['sourceDataset']['value'],
+                                                   path_props['sourceClass']['value'],
+                                                   path_props['sourcePathString']['value'], # !
+                                                   new_temp_named_graph, VOCAB_GRAPH, 10)
+                # We might want to dump intermediary unified content to file before committing to store
+                batch_res = query_sudo(get_batch_qs)
+                if not batch_res['results']['bindings']:
+                    logger.info("Finished unification")
+                    break
+                else:
+                    logger.info("Running unification batch")
+                g = sparql_construct_res_to_graph(batch_res)
+                for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
+                    update_sudo(query_string)
+        drop_graph(new_temp_named_graph)
 
 
 @app.route('/<job_uuid>', methods=['POST'])
@@ -103,7 +104,15 @@ def run_vocab_unification_req(job_uuid: str):
 
     return ''
 
-@app.route('/delta', methods=['POST'])
+
+@app.route('/delete-vocabulary/<vocab_uuid>', methods=('POST',))
+def delete_vocabulary(vocab_uuid: str):
+    update_sudo(remove_vocab_concepts(vocab_uuid, VOCAB_GRAPH))
+    update_sudo(remove_vocab_meta(vocab_uuid, VOCAB_GRAPH))
+    return '', 200
+
+
+@ app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
     job_triple = next(filter(
