@@ -58,6 +58,8 @@ def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH
             logger.info(
                 "You've been redirected. Probably want to replace url in db.")
 
+        assert res.ok
+
         # TODO: better handling + negociating
         logger.info(f'Content-Type: {res.headers["Content-Type"]}')
         logger.info(f'MIME-Type: {mime_type}')
