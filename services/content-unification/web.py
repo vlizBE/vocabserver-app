@@ -28,6 +28,7 @@ TEMP_GRAPH_BASE = 'http://example-resource.com/graph/'
 VOCAB_GRAPH = "http://mu.semte.ch/graphs/public"
 UNIFICATION_TARGET_GRAPH = "http://mu.semte.ch/graphs/public"
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
+TEMP_GRAPH_BASE = 'http://example-resource.com/graph/'
 
 CONT_UN_JOB_TYPE = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
 
@@ -54,36 +55,39 @@ SELECT DISTINCT ?job_uri WHERE {
 
 def run_vocab_unification(vocab_uri):
     vocab_sources = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))['results']['bindings']
+    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
     for vocab_source in vocab_sources:
         dataset_versions = query_sudo(get_dataset(vocab_source['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings']
-        new_temp_named_graph = load_file_to_db(dataset_versions[0]['data_dump']['value'], VOCAB_GRAPH)
+        new_temp_named_graph = load_file_to_db(dataset_versions[0]['data_dump']['value'], VOCAB_GRAPH, temp_named_graph)
         if len(dataset_versions) > 1: # previous dumps exist
             old_temp_named_graph = load_file_to_db(dataset_versions[1]['data_dump']['value'], VOCAB_GRAPH)
             diff_subjects = diff_graphs(old_temp_named_graph, new_temp_named_graph)
             for diff_subjects_batch in batched(diff_subjects, 10):
                 query_sudo(delete_from_graph(diff_subjects_batch, VOCAB_GRAPH))
             drop_graph(old_temp_named_graph)
-        prop_paths_qs = get_property_paths(vocab_source['mappingShape']['value'], VOCAB_GRAPH)
-        prop_paths_res = query_sudo(prop_paths_qs)
-        for path_props in prop_paths_res['results']['bindings']:
-            while True:
-                get_batch_qs = get_ununified_batch(path_props['destClass']['value'],
-                                                   path_props['destPath']['value'],
-                                                   vocab_source['sourceDataset']['value'],
-                                                   path_props['sourceClass']['value'],
-                                                   path_props['sourcePathString']['value'], # !
-                                                   new_temp_named_graph, VOCAB_GRAPH, 10)
-                # We might want to dump intermediary unified content to file before committing to store
-                batch_res = query_sudo(get_batch_qs)
-                if not batch_res['results']['bindings']:
-                    logger.info("Finished unification")
-                    break
-                else:
-                    logger.info("Running unification batch")
-                g = sparql_construct_res_to_graph(batch_res)
-                for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
-                    update_sudo(query_string)
-        drop_graph(new_temp_named_graph)
+    prop_paths_qs = get_property_paths(vocab_sources[0]['mappingShape']['value'], VOCAB_GRAPH)
+    prop_paths_res = query_sudo(prop_paths_qs)
+
+    for path_props in prop_paths_res['results']['bindings']:
+        while True:
+            get_batch_qs = get_ununified_batch(path_props['destClass']['value'],
+                                               path_props['destPath']['value'],
+                                               [vocab_source['sourceDataset']['value'] for vocab_source in vocab_sources],
+                                               path_props['sourceClass']['value'],
+                                               path_props['sourcePathString']['value'], # !
+                                               temp_named_graph, VOCAB_GRAPH, 10)
+            # We might want to dump intermediary unified content to file before committing to store
+            batch_res = query_sudo(get_batch_qs)
+            if not batch_res['results']['bindings']:
+                logger.info("Finished unification")
+                break
+            else:
+                logger.info("Running unification batch")
+            g = sparql_construct_res_to_graph(batch_res)
+            for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
+                update_sudo(query_string)
+
+    drop_graph(temp_named_graph)
 
 
 @app.route('/<job_uuid>', methods=['POST'])

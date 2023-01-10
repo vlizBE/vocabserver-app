@@ -51,8 +51,9 @@ def upload_file_to_graph(file, graph):
     for query_string in serialize_graph_to_sparql(g, graph):
         update_virtuoso(query_string)
 
-def load_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH):
-    temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
+def load_file_to_db(uri: str, metadata_graph: str = MU_APPLICATION_GRAPH, temp_named_graph=None):
+    if not temp_named_graph:
+        temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
     query_string = construct_get_file_query(uri, metadata_graph)
     file_result = query_sudo(query_string)['results']['bindings'][0]
     upload_file_to_graph(shared_uri_to_path(file_result['physicalFile']['value']), temp_named_graph)
