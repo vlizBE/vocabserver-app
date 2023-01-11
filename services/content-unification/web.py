@@ -19,7 +19,7 @@ from job import run_job
 from vocabulary import get_vocabulary
 from dataset import get_dataset
 
-from unification import unify_from_node_shape, get_property_paths, get_ununified_batch, delete_from_graph, remove_vocab_concepts, remove_vocab_data_dumps, remove_vocab_source_datasets, remove_vocab_meta, remove_vocab_vocab_fetch_jobs, remove_vocab_vocab_unification_jobs, remove_vocab_class_partitions, remove_vocab_property_partitions, remove_vocab_mapping_shape
+from unification import unify_from_node_shape, get_property_paths, get_ununified_batch, delete_from_graph, remove_vocab_concepts, remove_vocab_data_dumps, remove_vocab_source_datasets, remove_vocab_meta, remove_vocab_vocab_fetch_jobs, remove_vocab_vocab_unification_jobs, remove_vocab_partitions, remove_vocab_mapping_shape
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
@@ -104,14 +104,13 @@ def run_vocab_unification_req(job_uuid: str):
     return ''
 
 
-@app.route('/delete-vocabulary/<vocab_uuid>', methods=('POST',))
+@app.route('/delete-vocabulary/<vocab_uuid>', methods=('DELETE',))
 def delete_vocabulary(vocab_uuid: str):
     update_sudo(remove_vocab_concepts(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_data_dumps(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_vocab_fetch_jobs(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_vocab_unification_jobs(vocab_uuid, VOCAB_GRAPH))
-    update_sudo(remove_vocab_class_partitions(vocab_uuid, VOCAB_GRAPH))
-    update_sudo(remove_vocab_property_partitions(vocab_uuid, VOCAB_GRAPH))
+    update_sudo(remove_vocab_partitions(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_source_datasets(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_mapping_shape(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_meta(vocab_uuid, VOCAB_GRAPH))

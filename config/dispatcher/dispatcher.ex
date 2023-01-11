@@ -32,7 +32,7 @@ defmodule Dispatcher do
     forward conn, [], "http://content-unification/" <> id
   end
 
-  post "/content-unification-jobs/delete-vocabulary/:id", @any do
+  delete "/vocabularies/:id", @any do
     forward conn, [], "http://content-unification/delete-vocabulary/" <> id
   end
 
