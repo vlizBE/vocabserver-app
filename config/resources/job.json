@@ -15,7 +15,7 @@
       "class": "cogs:Job",
       "attributes": {
         "created": {
-          "type": "date",
+          "type": "datetime",
           "predicate": "dct:created"
         },
         "sources": {
