@@ -78,7 +78,7 @@ WHERE {
 
 def get_ununified_batch(dest_class,
                         dest_predicate,
-                        source_dataset,
+                        source_datasets,
                         source_class,
                         source_path_string,
                         source_graph,
@@ -90,9 +90,12 @@ PREFIX dct: <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?s a $dest_class .
     ?s $dest_predicate ?sourceValue .
-    ?s dct:source $source_dataset .
+    ?s dct:source ?sourceDataset .
 }
 WHERE {
+    VALUES ?sourceDataset {
+        $source_datasets
+    }
     FILTER NOT EXISTS {
         GRAPH $target_graph {
             ?s
@@ -111,7 +114,7 @@ LIMIT $batch_size
     query_string = query_template.substitute(
         dest_class=sparql_escape_uri(dest_class),
         dest_predicate=sparql_escape_uri(dest_predicate),
-        source_dataset=sparql_escape_uri(source_dataset),
+        source_datasets="\n         ".join([sparql_escape_uri(source_dataset) for source_dataset in source_datasets]),
         source_class=sparql_escape_uri(source_class),
         source_path_string=source_path_string,  # !
         source_graph=sparql_escape_uri(source_graph),

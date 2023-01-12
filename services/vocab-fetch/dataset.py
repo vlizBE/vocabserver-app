@@ -10,7 +10,7 @@ PREFIX void: <http://rdfs.org/ns/void#>
 PREFIX cogs: <http://vocab.deri.ie/cogs#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
-SELECT (?page AS ?download_link) ?format ?download_url ?data_dump
+SELECT DISTINCT (?page AS ?download_link) ?format ?download_url ?data_dump
 WHERE {
     GRAPH $graph {
         $dataset
