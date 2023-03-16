@@ -60,6 +60,9 @@ services:
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/vocab-fetch/:/app
+    # Run in dev mode to circument memory limitations
+    environment:
+      MODE: "development"
   content-unification:
     build: ./services/content-unification
     volumes:
