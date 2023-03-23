@@ -1,0 +1,14 @@
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX mu:   <http://mu.semte.ch/vocabularies/core/>
+PREFIX ext:   <http://mu.semte.ch/vocabularies/ext/>
+PREFIX vsd: <http://vocabsearch.data.gift/dataset-types/>
+INSERT DATA {
+  GRAPH <http://mu.semte.ch/graphs/public> {
+     vsd:LDES a ext:DatasetType;
+        mu:uuid "d4f0eac2-a03e-4781-9d61-6ff0a87286d6";
+        skos:prefLabel "LDES".
+     vsd:FileDump a ext:DatasetType;
+        mu:uuid "bcd32864-76cf-407e-a8b2-68deb338c94c";
+        skos:prefLabel "File dump".
+   }
+}

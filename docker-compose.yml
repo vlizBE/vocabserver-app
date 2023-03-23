@@ -26,6 +26,9 @@ services:
       MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
     volumes:
       - ./config/authorization:/config
+    networks:
+      - default
+      - ldes-consumers
   triplestore:
     image: redpencil/virtuoso:1.0.0
     environment:
@@ -34,6 +37,12 @@ services:
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
+  migrations:
+    image: semtech/mu-migrations-service:0.8.0
+    links:
+      - triplestore:database
+    volumes:
+      - ./config/migrations:/data/migrations
   resource:
     image: semtech/mu-cl-resources:1.21.1
     links:
@@ -78,3 +87,17 @@ services:
       - ./config/uuid-generation/:/config
   # webcomponent:
   #   image: vocabsearch-webcomponent
+  ldes-consumer-manager:
+    image: semtech/mu-python-template:2.0.0-beta.1
+    ports:
+      - "8888:80"
+    environment:
+      MODE: "development"
+      MU_NETWORK: ldes-consumers
+      CONSUMER_IMAGE: redpencil/ldes-consumer-service:feature-stop-on-errors
+    volumes:
+      - "/home/nielsv/Code/VLIZ/ldes-consumer-manager/:/app"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+networks:
+  ldes-consumers:
+    name: ldes-consumers
