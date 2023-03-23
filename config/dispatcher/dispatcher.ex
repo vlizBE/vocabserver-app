@@ -32,6 +32,9 @@ defmodule Dispatcher do
     forward conn, [], "http://content-unification/" <> id
   end
 
+  match "/dataset-types/*path", @json do
+    forward conn, path, "http://resource/dataset-types/"
+  end
   match "/vocabularies/*path", @json do
     forward conn, path, "http://resource/vocabularies/"
   end
@@ -42,6 +45,10 @@ defmodule Dispatcher do
 
   match "/shacl-node-shapes/*path", @json do
     forward conn, path, "http://resource/shacl-node-shapes/"
+  end
+
+  match "/datasets/*path", @json do
+    forward conn, path, "http://resource/datasets/"
   end
 
   match "/datasets/*path", @json do

@@ -23,6 +23,7 @@ defmodule Acl.UserGroups.Config do
                     constraint: %ResourceConstraint{
                       resource_types: [
                         "http://mu.semte.ch/vocabularies/ext/VocabularyMeta",
+                        "http://mu.semte.ch/vocabularies/ext/DatasetType",
                         "http://www.w3.org/ns/shacl#NodeShape",
                         "http://www.w3.org/ns/shacl#PropertyShape",
                         "http://mu.semte.ch/vocabularies/ext/VocabularyMeta",

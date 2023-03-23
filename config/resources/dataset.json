@@ -5,9 +5,22 @@
     "dct": "http://purl.org/dc/terms/",
     "foaf": "http://xmlns.com/foaf/0.1/",
     "prov": "http://www.w3.org/ns/prov#",
-    "ext": "http://mu.semte.ch/vocabularies/ext/"
+    "ext": "http://mu.semte.ch/vocabularies/ext/",
+    "skos": "http://www.w3.org/2004/02/skos/core#"
   },
   "resources": {
+    "dataset-types": {
+      "name": "dataset-type",
+      "class": "ext:DatasetType",
+      "attributes": {
+        "pref-label": {
+          "predicate": "skos:prefLabel",
+          "type": "string"
+        }
+      },
+      "features": ["include-uri"],
+      "new-resource-base": "https://my-application.com/dataset-types/"
+    },
     "datasets": {
       "name": "dataset",
       "class": "void:Dataset",
@@ -27,10 +40,6 @@
         "format": {
           "type": "url",
           "predicate": "void:feature"
-        },
-        "sparql-endpoint": {
-          "type": "url",
-          "predicate": "void:sparqlEndpoint"
         },
         "property": {
           "type": "url",
@@ -60,6 +69,11 @@
           "predicate": "void:dataDump",
           "target": "file",
           "cardinality": "many"
+        },
+        "type": {
+          "predicate": "dct:type",
+          "target": "dataset-type",
+          "cardinality": "one"
         },
         "vocabulary": {
           "predicate": "ext:sourceDataset",
