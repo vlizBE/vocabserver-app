@@ -81,6 +81,8 @@ services:
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
+      # Run in dev mode to circument memory limitations
+      MODE: "development"
   uuid-generation:
     image: kanselarij/uuid-generation-service:1.0.0
     volumes:
