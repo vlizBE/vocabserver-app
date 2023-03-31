@@ -51,10 +51,6 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/datasets/"
   end
 
-  match "/datasets/*path", @json do
-    forward conn, path, "http://resource/datasets/"
-  end
-
   get "/jobs/*path", @json do
     forward conn, path, "http://resource/jobs/"
   end
