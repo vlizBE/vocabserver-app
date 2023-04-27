@@ -52,6 +52,10 @@
         "entities": {
           "type": "integer",
           "predicate": "void:entities"
+        },
+        "max-requests": {
+          "type": "integer",
+          "predicate": "ext:maxRequests"
         }
       },
       "relationships": {

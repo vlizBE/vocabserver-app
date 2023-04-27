@@ -9,17 +9,21 @@ def get_dataset(dataset, graph=MU_APPLICATION_GRAPH):
 PREFIX void: <http://rdfs.org/ns/void#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-SELECT (?page AS ?download_link) ?format ?download_url ?data_dump ?creation_date
+SELECT (?page AS ?download_link) ?format ?download_url ?data_dump ?creation_date ?dataset_graph
 WHERE {
     GRAPH $graph {
         $dataset
-            a void:Dataset ;
+            a void:Dataset .
+        OPTIONAL {
+            $dataset void:dataDump ?data_dump ;
             foaf:page ?download_url ;
             void:feature ?format .
-        OPTIONAL {
-            $dataset void:dataDump ?data_dump .
             ?data_dump dct:created ?creation_date .
+        }
+        OPTIONAL {
+            $dataset ext:datasetGraph ?dataset_graph .
         }
     }
 }
