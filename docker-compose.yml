@@ -3,23 +3,29 @@ version: '3.4'
 services:
   frontend:
     image: redpencil/frontend-vliz-vocabserver
+    restart: always
   identifier:
+    ports:
+      - 0.0.0.0:3033:80
     image: semtech/mu-identifier:1.10.0
     environment:
       SESSION_COOKIE_SECURE: "on"
       DEFAULT_ACCESS_CONTROL_ALLOW_ORIGIN_HEADER: "*"
     links:
       - dispatcher:dispatcher
+    restart: always
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     links:
       - resource:resource
     volumes:
       - ./config/dispatcher:/config
+    restart: always
   delta-notifier:
     image: semtech/mu-delta-notifier:0.1.0
     volumes:
       - ./config/delta:/config
+    restart: always
   database:
     image: semtech/mu-authorization:latest
     environment:
@@ -29,6 +35,7 @@ services:
     networks:
       - default
       - ldes-consumers
+    restart: always
   triplestore:
     image: redpencil/virtuoso:1.0.0
     environment:
@@ -37,22 +44,26 @@ services:
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
+    restart: always
   migrations:
     image: semtech/mu-migrations-service:0.8.0
     links:
       - triplestore:database
     volumes:
       - ./config/migrations:/data/migrations
+    restart: always
   resource:
     image: semtech/mu-cl-resources:1.21.1
     links:
       - database:database
     volumes:
       - ./config/resources:/config
+    restart: always
   search:
     image: semtech/mu-search:feature-language-strings
     volumes:
       - ./config/search:/config
+    restart: always
   elasticsearch:
     image: semtech/mu-search-elastic-backend:1.0.0
     volumes:
@@ -64,6 +75,7 @@ services:
         hard: 65535
     environment:
       - discovery.type=single-node
+    restart: always
   vocab-fetch:
     build: ./services/vocab-fetch
     volumes:
@@ -72,6 +84,7 @@ services:
     # Run in dev mode to circument memory limitations
     environment:
       MODE: "development"
+    restart: always
   content-unification:
     build: ./services/content-unification
     volumes:
@@ -83,10 +96,12 @@ services:
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
       # Run in dev mode to circument memory limitations
       MODE: "development"
+    restart: always
   uuid-generation:
     image: kanselarij/uuid-generation-service:1.0.0
     volumes:
       - ./config/uuid-generation/:/config
+    restart: always
   # webcomponent:
   #   image: vocabsearch-webcomponent
   ldes-consumer-manager:
@@ -96,6 +111,7 @@ services:
       CONSUMER_IMAGE: redpencil/ldes-consumer-service:feature-consumer-status
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+    restart: always
 networks:
   ldes-consumers:
     name: ldes-consumers
