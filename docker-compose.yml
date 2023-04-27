@@ -90,15 +90,11 @@ services:
   # webcomponent:
   #   image: vocabsearch-webcomponent
   ldes-consumer-manager:
-    image: semtech/mu-python-template:2.0.0-beta.1
-    ports:
-      - "8888:80"
+    image: redpencil/ldes-consumer-manager
     environment:
-      MODE: "development"
       MU_NETWORK: ldes-consumers
-      CONSUMER_IMAGE: redpencil/ldes-consumer-service:feature-stop-on-errors
+      CONSUMER_IMAGE: redpencil/ldes-consumer-service:feature-consumer-status
     volumes:
-      - "/home/nielsv/Code/VLIZ/ldes-consumer-manager/:/app"
       - "/var/run/docker.sock:/var/run/docker.sock"
 networks:
   ldes-consumers:
