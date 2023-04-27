@@ -9,7 +9,7 @@ from helpers import generate_uuid, logger
 from helpers import query, update
 from sudo_query import query_sudo, update_sudo
 
-from rdflib import Graph, URIRef
+from rdflib import Graph, URIRef, Literal
 from rdflib.void import generateVoID
 
 from file import file_to_shared_uri, shared_uri_to_path
@@ -93,6 +93,30 @@ def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH
 
     return upload_resource_uri
 
+def escape(binding):
+    if binding['type'] == 'uri':
+        return URIRef(binding['value'])
+    elif binding['type'] == 'typed-literal':
+        return Literal(binding['value'], datatype=binding['datatype'])
+    else:
+        return Literal(binding['value'])
+
+def load_vocab_graph(graph: str):
+    query_template = Template("""
+SELECT ?s ?p ?o WHERE {
+    GRAPH $graph {
+        ?s ?p ?o .
+    }
+}
+""")
+    query_string = query_template.substitute(
+        graph=sparql_escape_uri(graph)
+    )
+    results = query_sudo(query_string)['results']['bindings']
+    g = Graph()
+    for triple in results:
+        g.add(tuple(map(escape, (triple['s'], triple['p'], triple['o']))))
+    return g
 
 def get_job_uri(job_uuid: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''
@@ -142,7 +166,10 @@ def run_dataset_download_route(job_uuid: str):
 
 def generate_dataset_structural_metadata(dataset_uri):
     dataset_res = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))['results']['bindings'][0]
-    dataset_contents_g = load_vocab_file(dataset_res['data_dump']['value'], FILES_GRAPH)
+    if 'data_dump' in dataset_res.keys():
+        dataset_contents_g = load_vocab_file(dataset_res['data_dump']['value'], FILES_GRAPH)
+    else:
+        dataset_contents_g = load_vocab_graph(dataset_res['dataset_graph']['value'])
     dataset_meta_g, dataset = generateVoID(dataset_contents_g, dataset=URIRef(dataset_uri))
     for query_string in serialize_graph_to_sparql(dataset_meta_g, VOID_DATASET_GRAPH):
         update_sudo(query_string)

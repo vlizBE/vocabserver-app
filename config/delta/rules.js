@@ -106,6 +106,27 @@ export default [
       },
       object: {
         type: 'uri',
+        value: 'http://rdfs.org/ns/void#Dataset'
+      }
+    },
+    callback: {
+      url: 'http://ldes-consumer-manager/delta',
+      method: 'POST'
+    },
+    options: {
+      resourceFormat: 'v0.0.1',
+      gracePeriod: 2500,
+      ignoreFromSelf: true
+    }
+  },
+  {
+    match: {
+      predicate: {
+        type: 'uri',
+        value: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+      },
+      object: {
+        type: 'uri',
         value: 'http://www.w3.org/2004/02/skos/core#Concept'
       }
     },

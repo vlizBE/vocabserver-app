@@ -45,6 +45,21 @@ def sparql_construct_res_to_graph(res):
         g.add((s, p, o))
     return g
 
+def copy_graph_to_temp(graph, temp_named_graph=None):
+    query_string = Template("""
+INSERT {
+    GRAPH $new_graph {?s ?p ?o .}
+}
+WHERE {
+    GRAPH $old_graph {?s ?p ?o .}
+}
+    """).substitute(
+        old_graph=sparql_escape_uri(graph),
+        new_graph=sparql_escape_uri(temp_named_graph),
+    )
+    update_virtuoso(query_string)
+    return temp_named_graph
+
 def upload_file_to_graph(file, graph):
     g = Graph()
     g.parse(file)

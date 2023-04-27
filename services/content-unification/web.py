@@ -13,7 +13,8 @@ from helpers import query as sparql_query
 from helpers import update as sparql_update
 from sudo_query import query_sudo, auth_update_sudo as update_sudo
 
-from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph, load_file_to_db, drop_graph, diff_graphs
+from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph, load_file_to_db, drop_graph, \
+    diff_graphs, copy_graph_to_temp
 
 from job import run_job
 from vocabulary import get_vocabulary
@@ -58,13 +59,18 @@ def run_vocab_unification(vocab_uri):
     temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
     for vocab_source in vocab_sources:
         dataset_versions = query_sudo(get_dataset(vocab_source['sourceDataset']['value'], VOCAB_GRAPH))['results']['bindings']
-        new_temp_named_graph = load_file_to_db(dataset_versions[0]['data_dump']['value'], VOCAB_GRAPH, temp_named_graph)
-        if len(dataset_versions) > 1: # previous dumps exist
-            old_temp_named_graph = load_file_to_db(dataset_versions[1]['data_dump']['value'], VOCAB_GRAPH)
-            diff_subjects = diff_graphs(old_temp_named_graph, new_temp_named_graph)
-            for diff_subjects_batch in batched(diff_subjects, 10):
-                query_sudo(delete_from_graph(diff_subjects_batch, VOCAB_GRAPH))
-            drop_graph(old_temp_named_graph)
+        print(dataset_versions)
+        # TODO: LDES check
+        if 'data_dump' in dataset_versions[0].keys():
+            new_temp_named_graph = load_file_to_db(dataset_versions[0]['data_dump']['value'], VOCAB_GRAPH, temp_named_graph)
+            if len(dataset_versions) > 1: # previous dumps exist
+                old_temp_named_graph = load_file_to_db(dataset_versions[1]['data_dump']['value'], VOCAB_GRAPH)
+                diff_subjects = diff_graphs(old_temp_named_graph, new_temp_named_graph)
+                for diff_subjects_batch in batched(diff_subjects, 10):
+                    query_sudo(delete_from_graph(diff_subjects_batch, VOCAB_GRAPH))
+                drop_graph(old_temp_named_graph)
+        else:
+            copy_graph_to_temp(dataset_versions[0]['dataset_graph']['value'], temp_named_graph)
     prop_paths_qs = get_property_paths(vocab_sources[0]['mappingShape']['value'], VOCAB_GRAPH)
     prop_paths_res = query_sudo(prop_paths_qs)
 
