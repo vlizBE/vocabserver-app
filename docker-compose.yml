@@ -93,7 +93,7 @@ services:
     image: redpencil/ldes-consumer-manager
     environment:
       MU_NETWORK: ldes-consumers
-      CONSUMER_IMAGE: redpencil/ldes-consumer-service:feature-consumer-status
+      CONSUMER_IMAGE: redpencil/ldes-consumer:feature-consumer-status
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
 networks:
