@@ -164,6 +164,15 @@ def run_dataset_download_route(job_uuid: str):
 
     return ''
 
+def remove_old_metadata_from_graph(g, graph_name):
+    for (s,p,_) in g.triples((None, None, None)):
+        deletequery = "\n".join([f"PREFIX {prefix}: {ns.n3()}" for prefix, ns in g.namespaces()])
+        deletequery += f"\nDELETE WHERE {{\n\tGRAPH {sparql_escape_uri(graph_name)} {{\n"
+        deletequery += f" \t\t{s.n3()} {p.n3()} ?o ."
+        deletequery += f" \n\t }}\n}}\n"
+        update_sudo(deletequery)
+
+
 def generate_dataset_structural_metadata(dataset_uri):
     dataset_res = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))['results']['bindings'][0]
     if 'data_dump' in dataset_res.keys():
@@ -171,6 +180,7 @@ def generate_dataset_structural_metadata(dataset_uri):
     else:
         dataset_contents_g = load_vocab_graph(dataset_res['dataset_graph']['value'])
     dataset_meta_g, dataset = generateVoID(dataset_contents_g, dataset=URIRef(dataset_uri))
+    remove_old_metadata_from_graph(dataset_meta_g, VOID_DATASET_GRAPH)
     for query_string in serialize_graph_to_sparql(dataset_meta_g, VOID_DATASET_GRAPH):
         update_sudo(query_string)
     return dataset_uri
