@@ -1,7 +1,4 @@
 services:
-  frontend:
-    entrypoint: "echo 'service disabled'"
-    restart: "no"
   identifier:
     ports:
       - 80:80
