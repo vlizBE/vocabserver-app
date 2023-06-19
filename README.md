@@ -25,6 +25,7 @@ A demo is currently available on https://vocabsearch.redpencil.io/ .
 The backend was tested on ubuntu 20.04 and requires both docker and docker-compose to be installed.
 
 This can be done with the following script:
+
 NOTE: as of June 2023 `docker-compose` is deprecated and replaced by the `docker compose` command that is now part of docker. The steps for docker-compose in the script below can be skipped.
 
 
