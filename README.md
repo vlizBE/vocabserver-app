@@ -84,7 +84,7 @@ server {
 }
 ```
 
-## updating the application
+### updating the application
 Updating typically involves the following steps:
 
 1. `git pull` the update the repository on the server
@@ -93,13 +93,16 @@ Updating typically involves the following steps:
 4. `docker compose up -d`  create and start all services in detached mode
 
 
-## resetting the application
+### resetting the application
 In some cases it can be useful to fully reset the application. This can easily be done with the following steps:
 
 1. `docker compose down` stop and remove all existing services (and their ephimeral state)
-2. `rm -rf ./data` remove all state
+2. `rm -rf ./data ./config/search/update-handler.store` remove all state
 3. `git checkout ./data` restore initial state from repository
 4. `docker compose up -d` create and start all services in detached mode
+
+### recreate search indexes (after updating config)
+This can be done by running the `./scripts/reset-elastic.sh` script
 
 ## Service overview
 ![Overview](vocabserver-architecture.png)
