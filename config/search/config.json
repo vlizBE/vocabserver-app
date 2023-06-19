@@ -24,9 +24,10 @@
   "default_settings": {
     "analysis": {
       "analyzer": {
-        "myanalyzer": {
+        "custom-analyzer": {
           "tokenizer": "standard",
           "filter": [
+            "word_delimiter_graph",
             "lowercase",
             "asciifolding"
           ]
@@ -52,14 +53,17 @@
           "sourceDataset": { "type": "keyword" },
           "prefLabel": {
             "properties": {
-              "default": { "type": "text" },
-              "en": { "type": "text" },
-              "nl": { "type": "text"},
-              "fr": { "type": "text"},
-              "de": { "type": "text"}
+              "default": { "type": "text", "analyzer": "custom-analyzer" },
+              "en": { "type": "text", "analyzer": "custom-analyzer" },
+              "nl": { "type": "text", "analyzer": "custom-analyzer" },
+              "fr": { "type": "text", "analyzer": "custom-analyzer" },
+              "de": { "type": "text", "analyzer": "custom-analyzer" }
             }
           },
-          "tagLabels": { "type": "keyword" }
+          "tagLabels": {
+            "type": "text",
+            "analyzer": "custom-analyzer"
+          }
         }
       }
     }
