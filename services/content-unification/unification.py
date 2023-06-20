@@ -4,6 +4,7 @@ from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_esc
 
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
+
 def unify_from_node_shape(node_shape, source_dataset, metadata_graph, source_graph, target_graph):
     query_template = Template("""
 PREFIX void: <http://rdfs.org/ns/void#>
@@ -47,6 +48,7 @@ WHERE {
     )
     return query_string
 
+
 def get_property_paths(node_shape, metadata_graph):
     query_template = Template("""
 PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -72,6 +74,7 @@ WHERE {
         node_shape=sparql_escape_uri(node_shape),
     )
     return query_string
+
 
 def get_ununified_batch(dest_class,
                         dest_predicate,
@@ -113,12 +116,13 @@ LIMIT $batch_size
         dest_predicate=sparql_escape_uri(dest_predicate),
         source_datasets="\n         ".join([sparql_escape_uri(source_dataset) for source_dataset in source_datasets]),
         source_class=sparql_escape_uri(source_class),
-        source_path_string=source_path_string, # !
+        source_path_string=source_path_string,  # !
         source_graph=sparql_escape_uri(source_graph),
         target_graph=sparql_escape_uri(target_graph),
         batch_size=batch_size
     )
     return query_string
+
 
 def delete_from_graph(subjects, graph):
     query_template = Template("""
@@ -138,5 +142,3 @@ WHERE {
         graph=sparql_escape_uri(graph),
     )
     return query_string
-
-
