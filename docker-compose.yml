@@ -1,9 +1,14 @@
 version: '3.4'
-
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   frontend:
     image: redpencil/frontend-vliz-vocabserver
     restart: always
+    logging: *default-logging    
   identifier:
     ports:
       - 0.0.0.0:3033:80
@@ -14,6 +19,7 @@ services:
     links:
       - dispatcher:dispatcher
     restart: always
+    logging: *default-logging    
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     links:
@@ -21,11 +27,13 @@ services:
     volumes:
       - ./config/dispatcher:/config
     restart: always
+    logging: *default-logging    
   delta-notifier:
     image: semtech/mu-delta-notifier:0.1.0
     volumes:
       - ./config/delta:/config
     restart: always
+    logging: *default-logginga    
   database:
     image: semtech/mu-authorization:latest
     environment:
@@ -36,6 +44,7 @@ services:
       - default
       - ldes-consumers
     restart: always
+    logging: *default-logging    
   triplestore:
     image: redpencil/virtuoso:1.0.0
     environment:
@@ -45,6 +54,7 @@ services:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
     restart: always
+    logging: *default-logging    
   migrations:
     image: semtech/mu-migrations-service:0.8.0
     links:
@@ -52,6 +62,7 @@ services:
     volumes:
       - ./config/migrations:/data/migrations
     restart: always
+    logging: *default-logging   
   resource:
     image: semtech/mu-cl-resources:1.21.1
     links:
@@ -59,11 +70,13 @@ services:
     volumes:
       - ./config/resources:/config
     restart: always
+    logging: *default-logging    
   search:
     image: semtech/mu-search:0.9.0-beta.6
     volumes:
       - ./config/search:/config
     restart: always
+    logging: *default-logging    
   elasticsearch:
     image: semtech/mu-search-elastic-backend:1.0.0
     volumes:
@@ -76,6 +89,7 @@ services:
     environment:
       - discovery.type=single-node
     restart: always
+    logging: *default-logging
   vocab-fetch:
     build: ./services/vocab-fetch
     volumes:
@@ -85,6 +99,7 @@ services:
     environment:
       MODE: "development"
     restart: always
+    logging: *default-logging
   content-unification:
     build: ./services/content-unification
     volumes:
@@ -97,11 +112,13 @@ services:
       # Run in dev mode to circument memory limitations
       MODE: "development"
     restart: always
+    logging: *default-logging
   uuid-generation:
     image: kanselarij/uuid-generation-service:1.0.0
     volumes:
       - ./config/uuid-generation/:/config
     restart: always
+    logging: *default-logging
   # webcomponent:
   #   image: vocabsearch-webcomponent
   ldes-consumer-manager:
@@ -112,6 +129,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     restart: always
+    logging: *default-logging
 networks:
   ldes-consumers:
     name: ldes-consumers
