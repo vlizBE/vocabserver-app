@@ -33,7 +33,7 @@ services:
     volumes:
       - ./config/delta:/config
     restart: always
-    logging: *default-logginga    
+    logging: *default-logging    
   database:
     image: semtech/mu-authorization:latest
     environment:
@@ -101,7 +101,7 @@ services:
     restart: always
     logging: *default-logging
   content-unification:
-    build: ./services/content-unification
+    build: ./services/content-unificationhttps://github.com/vlizBE/vocabserver-app/blob/main/docker-compose.yml#L36
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/content-unification/:/app
