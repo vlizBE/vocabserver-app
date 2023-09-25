@@ -8,7 +8,7 @@ services:
   frontend:
     image: redpencil/frontend-vliz-vocabserver
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   identifier:
     ports:
       - 0.0.0.0:3033:80
@@ -19,7 +19,7 @@ services:
     links:
       - dispatcher:dispatcher
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     links:
@@ -27,13 +27,13 @@ services:
     volumes:
       - ./config/dispatcher:/config
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   delta-notifier:
     image: semtech/mu-delta-notifier:0.1.0
     volumes:
       - ./config/delta:/config
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   database:
     image: semtech/mu-authorization:latest
     environment:
@@ -44,7 +44,7 @@ services:
       - default
       - ldes-consumers
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   triplestore:
     image: redpencil/virtuoso:1.0.0
     environment:
@@ -54,7 +54,7 @@ services:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   migrations:
     image: semtech/mu-migrations-service:0.8.0
     links:
@@ -62,7 +62,7 @@ services:
     volumes:
       - ./config/migrations:/data/migrations
     restart: always
-    logging: *default-logging   
+    logging: *default-logging
   resource:
     image: semtech/mu-cl-resources:1.21.1
     links:
@@ -70,13 +70,13 @@ services:
     volumes:
       - ./config/resources:/config
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   search:
     image: semtech/mu-search:0.9.0
     volumes:
       - ./config/search:/config
     restart: always
-    logging: *default-logging    
+    logging: *default-logging
   elasticsearch:
     image: semtech/mu-search-elastic-backend:1.0.0
     volumes:
