@@ -36,24 +36,24 @@ SELECT ?dataSource WHERE {
     return query_string
 
 
-def remove_vocab_concepts(vocab_uuid: str, graph: str) -> str:
+def select_vocab_concepts_batch(vocab_uuid: str, graph: str) -> str:
     query_template = Template("""
 PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 
-WITH $graph
-DELETE {
-    ?concept ?conceptPred ?conceptObj .
-}
+SELECT DISTINCT (?concept AS ?s) (?conceptPred AS ?p) (?conceptObj AS ?o)
 WHERE {
-    ?vocabMeta a ext:VocabularyMeta ;
-                 mu:uuid $vocab_uuid .
-    ?vocabMeta ext:sourceDataset ?sourceDataset .
-    ?concept dct:source ?sourceDataset .
-    ?concept ?conceptPred ?conceptObj .
+    GRAPH $graph {
+        ?vocabMeta a ext:VocabularyMeta ;
+                    mu:uuid $vocab_uuid .
+        ?vocabMeta ext:sourceDataset ?sourceDataset .
+        ?concept dct:source ?sourceDataset .
+        ?concept ?conceptPred ?conceptObj .
+    }
 }
-    """)
+LIMIT 10
+""")
     query_string = query_template.substitute(
         graph=sparql_escape_uri(graph),
         vocab_uuid=sparql_escape_string(vocab_uuid),

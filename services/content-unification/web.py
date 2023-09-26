@@ -21,7 +21,7 @@ from vocabulary import get_vocabulary
 from dataset import get_dataset
 
 from unification import unify_from_node_shape, get_property_paths, get_ununified_batch, delete_from_graph
-from remove_vocab import remove_files, remove_vocab_concepts, remove_vocab_data_dumps, remove_vocab_source_datasets, remove_vocab_meta, remove_vocab_vocab_fetch_jobs, remove_vocab_vocab_unification_jobs, remove_vocab_partitions, remove_vocab_mapping_shape
+from remove_vocab import remove_files, select_vocab_concepts_batch, remove_vocab_data_dumps, remove_vocab_source_datasets, remove_vocab_meta, remove_vocab_vocab_fetch_jobs, remove_vocab_vocab_unification_jobs, remove_vocab_partitions, remove_vocab_mapping_shape
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
@@ -120,8 +120,19 @@ def run_vocab_unification_req(job_uuid: str):
 def delete_vocabulary(vocab_uuid: str):
     remove_files(vocab_uuid, VOCAB_GRAPH)
     update_sudo(remove_vocab_data_dumps(vocab_uuid, VOCAB_GRAPH))
-    update_sudo(remove_vocab_concepts(vocab_uuid, VOCAB_GRAPH))
+
+    # concepts may return too many results in mu-auth internal construct. Batch it here.
+    while True:
+        batch = query_sudo(select_vocab_concepts_batch(vocab_uuid, VOCAB_GRAPH))
+        bindings = batch['results']['bindings']
+        if bindings:
+            g = sparql_construct_res_to_graph(batch)
+            for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH, "DELETE"):
+                update_sudo(query_string)
+        else:
+            break
     update_sudo(remove_vocab_vocab_fetch_jobs(vocab_uuid, VOCAB_GRAPH))
+
     update_sudo(remove_vocab_vocab_unification_jobs(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_partitions(vocab_uuid, VOCAB_GRAPH))
     update_sudo(remove_vocab_source_datasets(vocab_uuid, VOCAB_GRAPH))
