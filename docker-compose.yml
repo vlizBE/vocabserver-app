@@ -109,7 +109,7 @@ services:
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
-      # Run in dev mode to circument memory limitations
+      # Run in dev mode to circumvent memory limitations
       MODE: "development"
     restart: always
     logging: *default-logging

@@ -141,7 +141,7 @@ def delete_vocabulary(vocab_uuid: str):
     return '', 200
 
 
-@ app.route('/delta', methods=['POST'])
+@app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
     job_triple = next(filter(
