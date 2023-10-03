@@ -32,7 +32,12 @@ def json_to_term(json_term):
     if json_term['type'] == 'uri':
         return URIRef(json_term['value'])
     else:
-        lang = json_term['lang'] if 'lang' in json_term else None
+        if 'xml:lang' in json_term:  # SELECT
+            lang = json_term['xml:lang']
+        elif 'lang' in json_term:  # CONSTRUCT
+            lang = json_term['lang']
+        else:
+            lang = None
         return Literal(json_term['value'], lang=lang)
 
 def sparql_construct_res_to_graph(res):
