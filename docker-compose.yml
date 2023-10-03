@@ -101,7 +101,7 @@ services:
     restart: always
     logging: *default-logging
   content-unification:
-    build: ./services/content-unificationhttps://github.com/vlizBE/vocabserver-app/blob/main/docker-compose.yml#L36
+    build: ./services/content-unification
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/content-unification/:/app
@@ -122,7 +122,7 @@ services:
   # webcomponent:
   #   image: vocabsearch-webcomponent
   ldes-consumer-manager:
-    image: redpencil/ldes-consumer-manager
+    image: redpencil/ldes-consumer-manager:0.1.0
     environment:
       MU_NETWORK: ldes-consumers
       CONSUMER_IMAGE: redpencil/ldes-consumer:feature-consumer-status
