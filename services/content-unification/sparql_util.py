@@ -6,9 +6,6 @@ from file import construct_get_file_query, shared_uri_to_path
 
 import os
 from string import Template
-from requests.auth import HTTPDigestAuth
-import urllib.parse
-import requests
 from more_itertools import batched
 from rdflib.graph import Graph
 from rdflib.term import URIRef, Literal
@@ -19,6 +16,9 @@ MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 BATCH_SIZE = 100
 # adapted from https://github.com/RDFLib/rdflib/issues/1704
 def serialize_graph_to_sparql(g, graph_name: str, operation="INSERT"):
+    # Note that the Graph triples method yields triples in random order
+    # Triples aren't grouped by subject. Current mu-search delta handling
+    # isn't affected by this.
     for triples_batch in batched(g.triples((None, None, None)), BATCH_SIZE):
         # updatequery = "\n".join([f"PREFIX {prefix}: {ns.n3()}" for prefix, ns in g.namespaces()])
         # Dropping prefixes boosts performance. Since the '.n3()'-method produces ntriples compliant triples,
