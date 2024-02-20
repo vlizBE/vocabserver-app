@@ -5,162 +5,98 @@ from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_esc
 from helpers import generate_uuid, logger
 import traceback
 
-############################################################
-# TODO: keep this generic and extract into packaged module later
-############################################################
-
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
-FINAL_STATUSES = (
-    "http://vocab.deri.ie/cogs#Success",
-    "http://redpencil.data.gift/id/concept/JobStatus/success", # compat (unpublished)
-    "http://vocab.deri.ie/cogs#Fail",
-    "http://redpencil.data.gift/id/concept/JobStatus/failed", # compat (unpublished)
-)
-STARTED_STATUSES = (
-    "http://vocab.deri.ie/cogs#Running",
-    "http://redpencil.data.gift/id/concept/JobStatus/busy" # compat (unpublished)
-)
 
-STATUS_STARTED = "http://vocab.deri.ie/cogs#Running"
-STATUS_SUCCESS = "http://vocab.deri.ie/cogs#Success"
-STATUS_FAILED = "http://vocab.deri.ie/cogs#Fail"
+STATUS_BUSY = 'http://redpencil.data.gift/id/concept/JobStatus/busy'
+STATUS_SCHEDULED = 'http://redpencil.data.gift/id/concept/JobStatus/scheduled'
+STATUS_SUCCESS = 'http://redpencil.data.gift/id/concept/JobStatus/success'
+STATUS_FAILED = 'http://redpencil.data.gift/id/concept/JobStatus/failed'
 
-def create_job(extra_rdf_type, resource_base, graph=MU_APPLICATION_GRAPH):
-    uuid = generate_uuid()
-    job = {
-        "uri": resource_base.rstrip("/") + f"/jobs/{uuid}",
-        "id": uuid,
-        "created": datetime.datetime.now()
-    }
-    query_template = Template("""
+def attach_task_results_container(task, results, graph=MU_APPLICATION_GRAPH):
+    CONTAINER_URI_PREFIX = 'http://redpencil.data.gift/id/container/'
+    container_uuid = generate_uuid()
+    container_uri = CONTAINER_URI_PREFIX + container_uuid
+
+    container_query_template = Template("""
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-PREFIX dct: <http://purl.org/dc/terms/>
-PREFIX cogs: <http://vocab.deri.ie/cogs#>
 
-INSERT DATA {
-    GRAPH $graph {
-        $job a cogs:Job , $extra_rdf_type ;
-        mu:uuid $uuid ;
-        dct:created $created .
-    }
-}""")
-    query_string = query_template.substitute(
-        graph=sparql_escape_uri(graph),
-        job=sparql_escape_uri(job["uri"]),
-        extra_rdf_type=sparql_escape_uri(extra_rdf_type),
-        uuid=sparql_escape_string(job["id"]),
-        created=sparql_escape_datetime(job["created"])
-    )
-    return query_string, job
-
-
-def attach_job_sources (job, sources, graph=MU_APPLICATION_GRAPH):
-    query_template = Template("""
-PREFIX cogs: <http://vocab.deri.ie/cogs#>
-PREFIX prov: <http://www.w3.org/ns/prov#>
 INSERT {
     GRAPH $graph {
-        $job prov:used $sources .
+        $task task:resultsContainer $container .
+        $container a nfo:DataContainer ;
+            mu:uuid $container_uuid ;
+            task:hasFile $results .
     }
 }
 WHERE {
     GRAPH $graph {
-        $job a cogs:Job .
+        $task a task:Task .
     }
 }""")
-    query_string = query_template.substitute(
+    container_query_string = container_query_template.substitute(
         graph=sparql_escape_uri(graph) if graph else "?g",
-        job=sparql_escape_uri(job),
-        sources=", ".join([sparql_escape_uri(source) for source in sources])
-    )
-    return query_string
-
-
-def attach_job_results (job, results, graph=MU_APPLICATION_GRAPH):
-    query_template = Template("""
-PREFIX cogs: <http://vocab.deri.ie/cogs#>
-PREFIX prov: <http://www.w3.org/ns/prov#>
-INSERT {
-    GRAPH $graph {
-        $job prov:generated $results .
-    }
-}
-WHERE {
-    GRAPH $graph {
-        $job a cogs:Job .
-    }
-}""")
-    query_string = query_template.substitute(
-        graph=sparql_escape_uri(graph) if graph else "?g",
-        job=sparql_escape_uri(job),
+        task=sparql_escape_uri(task),
+        container_uuid=sparql_escape_string(container_uuid),
+        container=sparql_escape_uri(container_uri),
         results=", ".join([sparql_escape_uri(result) for result in results])
     )
-    return query_string
+    return container_query_string
 
-
-def update_job_status (job, status, graph=MU_APPLICATION_GRAPH):
+def update_task_status(task, status, graph=MU_APPLICATION_GRAPH):
     time = datetime.datetime.now()
 
-    if status in FINAL_STATUSES:
-        time_pred = 'http://www.w3.org/ns/prov#endedAtTime'
-    elif status in STARTED_STATUSES:
-        time_pred = 'http://www.w3.org/ns/prov#startedAtTime'
-    else:
-        time_pred = None
-
     query_template = Template("""
-PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX dct: <http://purl.org/dc/terms/>
 
 DELETE {
     GRAPH $graph {
-        $job ext:status ?old_status .
+        $task adms:status ?old_status ;
+            dct:modified ?old_modified .
     }
 }
 INSERT {
     GRAPH $graph {
-        $job ext:status $new_status .
-        $time_triple
+        $task adms:status $new_status ;
+            dct:modified $modified .
     }
 }
 WHERE {
   GRAPH $graph {
-      $job a cogs:Job .
-      OPTIONAL { $job ext:status ?old_status }
+      $task a task:Task .
+      OPTIONAL { $task dct:modified ?old_modified }
   }
 }""")
-    if time_pred:
-        time_triple = f"{sparql_escape_uri(job)} {sparql_escape_uri(time_pred)} {sparql_escape_datetime(time)}."
-    else:
-        time_triple = ""
     query_string = query_template.substitute(
         graph=sparql_escape_uri(graph) if graph else "?g",
-        job=sparql_escape_uri(job),
+        task=sparql_escape_uri(task),
         new_status=sparql_escape_uri(status),
-        time_triple=time_triple
+        modified=sparql_escape_datetime(time)
     )
     return query_string
 
 
-def find_next_job(extra_rdf_type, graph=MU_APPLICATION_GRAPH):
+def find_actionable_task(task_uri, graph=MU_APPLICATION_GRAPH):
     query_template = Template("""
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX adms: <http://www.w3.org/ns/adms#>
 
-SELECT ?job (?uuid as ?id) ?status ?created WHERE {
+SELECT (?uuid as ?id) ?status ?created ?used WHERE {
     GRAPH $graph {
-        ?job a cogs:Job , $extra_rdf_type ;
+        $task_uri a task:Task ;
             dct:created ?created ;
+            adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled> ;
+            task:operation $operation ;
             mu:uuid ?uuid .
-            
-        OPTIONAL { ?job ext:status ?status . }
-        FILTER (?status NOT IN (
-                $already_started_statuses
-            )
-        )
+        OPTIONAL { $task_uri task:inputContainer/task:hasFile ?used }
     }
 }
 ORDER BY ASC(?created)
@@ -168,69 +104,33 @@ LIMIT 1
 """)
     query_string = query_template.substitute(
         graph=sparql_escape_uri(graph) if graph else "?g",
-        extra_rdf_type=sparql_escape_uri(extra_rdf_type),
-        already_started_statuses=",\n                ".join(
-            [sparql_escape_uri(stat) for stat in FINAL_STATUSES + STARTED_STATUSES])
+        task_uri=sparql_escape_uri(task_uri),
     )
     return query_string
 
-
-def find_actionable_job(job, graph=MU_APPLICATION_GRAPH):
-    """ Query for making sure a job is still available just before running it.
-        Also fetches the entities the job uses
-    """
-    query_template = Template("""
-PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX cogs: <http://vocab.deri.ie/cogs#>
-
-SELECT (?uuid as ?id) ?status ?used WHERE {
-    GRAPH $graph {
-        $job a cogs:Job ;
-            mu:uuid ?uuid .
-            
-        OPTIONAL { $job prov:used ?used . }
-        OPTIONAL { $job ext:status ?status . }
-        FILTER (?status NOT IN (
-                $already_started_statuses
-            )
-        )
-    }
-}
-""")
-    query_string = query_template.substitute(
-        graph=sparql_escape_uri(graph) if graph else "?g",
-        job=sparql_escape_uri(job) if graph else "?g",
-        already_started_statuses=",\n                ".join(
-            [sparql_escape_uri(stat) for stat in FINAL_STATUSES + STARTED_STATUSES])
-    )
-    return query_string
-
-
-def run_job(job_uri, graph, runner_func, sparql_query, sparql_update):
+def run_task(task_uri, graph, runner_func, sparql_query, sparql_update):
     # start_time = time.time()
 
-    job_q = find_actionable_job(job_uri, graph)
-    job_res = sparql_query(job_q)
-    if job_res["results"]["bindings"]:
-        used = [binding["used"]["value"] for binding in job_res["results"]["bindings"] if "used" in binding]
+    task_q = find_actionable_task(task_uri, graph)
+    task_res = sparql_query(task_q)
+    if task_res["results"]["bindings"]:
+        used = [binding["used"]["value"] for binding in task_res["results"]["bindings"] if "used" in binding]
     else:
-        raise Exception(f"Didn't find actionable job for <{job_uri}>")
+        raise Exception(f"Didn't find actionable task for <{task_uri}>")
 
-    # logger.info(f"Started running job {job_uri}")
+    logger.info(f"Started running task {task_uri}")
 
-    sparql_update(update_job_status(job_uri, STATUS_STARTED, graph))
+    sparql_update(update_task_status(task_uri, STATUS_BUSY, graph))
     try:
         generated = runner_func(used)
         if generated:
-            logger.info(f"Running job <{job_uri}> with source <{used[0]}> generated <{generated[0]}>")
-            sparql_update(attach_job_results(job_uri, generated, graph))
-        sparql_update(update_job_status(job_uri, STATUS_SUCCESS, graph))
+            logger.info(f"Running task <{task_uri}> with source <{used[0]}> generated <{generated[0]}>")
+            sparql_update(attach_task_results_container(task_uri, generated, graph))
+        sparql_update(update_task_status(task_uri, STATUS_SUCCESS, graph))
         return generated
     except Exception as e:
         traceback.print_exc()
-        sparql_update(update_job_status(job_uri, STATUS_FAILED, graph))
+        sparql_update(update_task_status(task_uri, STATUS_FAILED, graph))
 
     # end_time = time.time()
     # logger.info(
