@@ -76,6 +76,10 @@ defmodule Dispatcher do
     forward conn, [], "http://search/concepts/search"
   end
 
+  get "/concepts/*path", @json do
+    forward conn, path, "http://resource/concepts/"
+  end
+
   match "/assets/*path", @any do
     forward conn, path, "http://frontend/assets/"
   end
