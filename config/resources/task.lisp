@@ -52,9 +52,8 @@
 
 (define-resource data-container ()
   :class (s-prefix "nfo:DataContainer")
-  :has-many `((file :via ,(s-prefix "task:hasFile") ;;subProperty of dct:hasPart because mu-resource does not like the same predicate linked to multiple types
-                    :as "files")
-              (task :via ,(s-prefix "task:resultsContainer")
+  :properties `((:content :uri-set , (s-prefix "ext:content")))
+  :has-many `((task :via ,(s-prefix "task:resultsContainer")
                     :inverse t
                     :as "result-from-tasks")
               (task :via ,(s-prefix "task:inputContainer")

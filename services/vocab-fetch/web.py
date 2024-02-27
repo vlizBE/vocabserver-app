@@ -14,7 +14,7 @@ from rdflib.void import generateVoID
 
 from file import file_to_shared_uri, shared_uri_to_path
 from file import construct_get_file_query, construct_insert_file_query
-from job import run_task, find_actionable_task
+from task import run_task, find_actionable_task
 from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
 from sparql_util import serialize_graph_to_sparql
 from format_to_mime import FORMAT_TO_MIME_EXT
@@ -200,7 +200,7 @@ def process_delta():
     task_q = find_actionable_task(task_uri, TASKS_GRAPH)
     task_res = query_sudo(task_q)
     if task_res["results"]["bindings"]:
-        task_operation = [binding["used"]["operation"] for binding in task_res["results"]["bindings"] if "operation" in binding][0]
+        task_operation = [binding["operation"]['value'] for binding in task_res["results"]["bindings"] if "operation" in binding][0]
     else:
         return "Don't know how to handle task without operation type", 500
 

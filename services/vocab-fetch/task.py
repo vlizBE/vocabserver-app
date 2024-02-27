@@ -88,15 +88,16 @@ PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX cogs: <http://vocab.deri.ie/cogs#>
 PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
 PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-SELECT (?uuid as ?id) ?status ?created ?used WHERE {
+SELECT (?uuid as ?id) ?status ?created ?used ?operation WHERE {
     GRAPH $graph {
         $task_uri a task:Task ;
             dct:created ?created ;
             adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled> ;
-            task:operation $operation ;
+            task:operation ?operation ;
             mu:uuid ?uuid .
-        OPTIONAL { $task_uri task:inputContainer/task:hasFile ?used }
+        OPTIONAL { $task_uri task:inputContainer/ext:content ?used }
     }
 }
 ORDER BY ASC(?created)
