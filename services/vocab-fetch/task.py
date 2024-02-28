@@ -23,13 +23,14 @@ PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
 PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
 INSERT {
     GRAPH $graph {
         $task task:resultsContainer $container .
         $container a nfo:DataContainer ;
             mu:uuid $container_uuid ;
-            task:hasFile $results .
+            ext:content $results .
     }
 }
 WHERE {

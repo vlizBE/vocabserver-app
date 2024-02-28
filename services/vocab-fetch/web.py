@@ -191,10 +191,13 @@ METADATA_EXTRACTION_OPERATION = "http://mu.semte.ch/vocabularies/ext/MetadataExt
 @app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
-    task_triple = next(filter(
-        lambda x: x['predicate']['value'] == 'http://www.w3.org/ns/adms#status' and x['object']['value'] == 'http://redpencil.data.gift/id/concept/JobStatus/scheduled',
-        inserts
-    ))
+    try:
+        task_triple = next(filter(
+            lambda x: x['predicate']['value'] == 'http://www.w3.org/ns/adms#status' and x['object']['value'] == 'http://redpencil.data.gift/id/concept/JobStatus/scheduled',
+            inserts
+        ))
+    except StopIteration:
+        return "Can't do anything with this delta. Skipping.", 500
     task_uri = task_triple['subject']['value']
 
     task_q = find_actionable_task(task_uri, TASKS_GRAPH)
