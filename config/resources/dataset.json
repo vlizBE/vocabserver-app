@@ -27,7 +27,7 @@
       "attributes": {
         "alias": {
           "type": "string",
-          "predicate": "ext:alias"
+          "predicate": "dbpedia:alias"
         },
         "title": {
           "type": "string",
