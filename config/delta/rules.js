@@ -60,11 +60,11 @@ export default [
       // form of element is {subject,predicate,object}
       predicate: {
         type: "uri",
-        value: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+        value: "http://www.w3.org/ns/adms#status",
       },
       object: {
         type: "uri",
-        value: "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob",
+        value: "http://redpencil.data.gift/id/concept/JobStatus/scheduled",
       },
     },
     callback: {
