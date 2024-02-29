@@ -48,10 +48,7 @@ def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH
 
     file_resource_uri = file_to_shared_uri(file_resource_name)
 
-    headers = {
-        "Accept": accept_string,
-        "Accept-Charset": "UTF-8;q=1.0, *;q=0.9"
-    }
+    headers = {"Accept": accept_string}
 
     with requests.get(url, headers=headers, stream=True) as res:
         if res.url != url:
