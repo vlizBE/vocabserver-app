@@ -70,7 +70,8 @@ INSERT {
 }
 WHERE {
   GRAPH $graph {
-      $task a task:Task .
+      $task a task:Task ;
+            adms:status ?old_status .
       OPTIONAL { $task dct:modified ?old_modified }
   }
 }""")
