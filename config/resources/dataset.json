@@ -25,10 +25,6 @@
       "name": "dataset",
       "class": "void:Dataset",
       "attributes": {
-        "alias": {
-          "type": "string",
-          "predicate": "dbpedia:alias"
-        },
         "title": {
           "type": "string",
           "predicate": "dct:title"

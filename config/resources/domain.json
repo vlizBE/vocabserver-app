@@ -12,6 +12,10 @@
         "name": {
           "type": "string",
           "predicate": "rdfs:label"
+        },
+        "alias": {
+          "type": "string",
+          "predicate": "dbpedia:alias"
         }
       },
       "relationships": {
