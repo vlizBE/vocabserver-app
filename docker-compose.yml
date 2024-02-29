@@ -12,7 +12,7 @@ services:
   identifier:
     ports:
       - 0.0.0.0:3033:80
-    image: semtech/mu-identifier:1.10.0
+    image: semtech/mu-identifier:1.10.1
     environment:
       SESSION_COOKIE_SECURE: "on"
       DEFAULT_ACCESS_CONTROL_ALLOW_ORIGIN_HEADER: "*"
@@ -29,7 +29,7 @@ services:
     restart: always
     logging: *default-logging
   delta-notifier:
-    image: semtech/mu-delta-notifier:0.1.0
+    image: semtech/mu-delta-notifier:0.2.0
     volumes:
       - ./config/delta:/config
     restart: always
@@ -46,7 +46,7 @@ services:
     restart: always
     logging: *default-logging
   triplestore:
-    image: redpencil/virtuoso:1.0.0
+    image: redpencil/virtuoso:1.2.0-rc.1
     environment:
       SPARQL_UPDATE: "true"
       DEFAULT_GRAPH: "http://mu.semte.ch/application"
@@ -72,7 +72,7 @@ services:
     restart: always
     logging: *default-logging
   search:
-    image: semtech/mu-search:0.9.1
+    image: semtech/mu-search:0.10.0-beta.3
     volumes:
       - ./config/search:/config
     restart: always
