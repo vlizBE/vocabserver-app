@@ -208,6 +208,7 @@ def process_delta():
         return "Don't know how to handle task without operation type", 500
 
     if task_operation == VOCAB_DOWNLOAD_OPERATION:
+        logger.debug(f"Running task {task_uri}, operation {task_operation}")
         run_task(
             task_uri,
             TASKS_GRAPH,
@@ -217,6 +218,7 @@ def process_delta():
         )
         return '', 200
     elif task_operation == METADATA_EXTRACTION_OPERATION:
+        logger.debug(f"Running task {task_uri}, operation {task_operation}")
         run_task(
             task_uri,
             TASKS_GRAPH,
