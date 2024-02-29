@@ -25,6 +25,10 @@
       "name": "dataset",
       "class": "void:Dataset",
       "attributes": {
+        "alias": {
+          "type": "string",
+          "predicate": "ext:alias"
+        },
         "title": {
           "type": "string",
           "predicate": "dct:title"
@@ -56,6 +60,10 @@
         "max-requests": {
           "type": "integer",
           "predicate": "ext:maxRequests"
+        },
+        "dereference-members": {
+          "type": "bool",
+          "predicate": "ext:dereferenceMembers"
         }
       },
       "relationships": {
