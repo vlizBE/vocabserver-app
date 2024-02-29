@@ -35,6 +35,7 @@ defmodule Acl.UserGroups.Config do
                         "http://redpencil.data.gift/vocabularies/tasks/Task",
                         "http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#DataContainer",
                         "http://open-services.net/ns/core#Error",
+                        "http://mu.semte.ch/vocabularies/ext/alias",
                       ]
                     } } ] },
 

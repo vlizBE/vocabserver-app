@@ -42,3 +42,4 @@
 (add-prefix "task" "http://redpencil.data.gift/vocabularies/tasks/")
 (add-prefix "oslc" "http://open-services.net/ns/core#")
 (add-prefix "adms" "http://www.w3.org/ns/adms#")
+(add-prefix "skos" "http://www.w3.org/2004/02/skos/core#")
