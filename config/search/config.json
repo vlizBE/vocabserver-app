@@ -46,11 +46,16 @@
           "type": "language-string"
         },
         "sourceDataset": "http://purl.org/dc/terms/source",
+        "vocabulary": [
+          "http://purl.org/dc/terms/source",
+          "^http://mu.semte.ch/vocabularies/ext/sourceDataset"
+        ],
         "tagLabels": "http://vocab-server.com/tagLabel"
       },
       "mappings": {
         "properties": {
           "sourceDataset": { "type": "keyword" },
+          "vocabulary": {"type": "keyword" },
           "prefLabel": {
             "properties": {
               "default": { "type": "text", "analyzer": "custom-analyzer" },
