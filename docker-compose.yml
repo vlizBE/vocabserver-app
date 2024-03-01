@@ -90,6 +90,15 @@ services:
       - discovery.type=single-node
     restart: always
     logging: *default-logging
+  job-controller:
+    image: lblod/job-controller-service:1.0.1
+    volumes:
+      - ./config/job-controller/:/config/
+    environment:
+      LOG_SPARQL_QUERIES: "true"
+      LOG_SPARQL_UPDATES: "true"
+    restart: always
+    logging: *default-logging
   vocab-fetch:
     build: ./services/vocab-fetch
     volumes:

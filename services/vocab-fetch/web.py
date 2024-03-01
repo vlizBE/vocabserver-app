@@ -14,13 +14,13 @@ from rdflib.void import generateVoID
 
 from file import file_to_shared_uri, shared_uri_to_path
 from file import construct_get_file_query, construct_insert_file_query
-from job import run_job
+from task import run_task, find_actionable_task
 from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
 from sparql_util import serialize_graph_to_sparql
 from format_to_mime import FORMAT_TO_MIME_EXT
 
 # Maybe make these configurable
-JOBS_GRAPH = "http://mu.semte.ch/graphs/public"
+TASKS_GRAPH = "http://mu.semte.ch/graphs/public"
 FILES_GRAPH = "http://mu.semte.ch/graphs/public"
 VOID_DATASET_GRAPH = "http://mu.semte.ch/graphs/public"
 
@@ -48,10 +48,7 @@ def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH
 
     file_resource_uri = file_to_shared_uri(file_resource_name)
 
-    headers = {
-        "Accept": accept_string,
-        "Accept-Charset": "UTF-8;q=1.0, *;q=0.9"
-    }
+    headers = {"Accept": accept_string}
 
     with requests.get(url, headers=headers, stream=True) as res:
         if res.url != url:
@@ -118,25 +115,25 @@ SELECT ?s ?p ?o WHERE {
         g.add(tuple(map(escape, (triple['s'], triple['p'], triple['o']))))
     return g
 
-def get_job_uri(job_uuid: str, graph: str = MU_APPLICATION_GRAPH):
+def get_task_uri(task_uuid: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template('''
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-SELECT DISTINCT ?job_uri WHERE {
+SELECT DISTINCT ?task_uri WHERE {
     GRAPH $graph {
-        ?job_uri a ext:DatasetDownloadJob ;
-             mu:uuid $job_uuid .
+        ?task_uri task:operation <http://mu.semte.ch/vocabularies/ext/dataset-download-task>;
+             mu:uuid $task_uuid .
     }
 }
 ''')
 
     query_string = query_template.substitute(
         graph=sparql_escape_uri(graph),
-        job_uuid=sparql_escape(job_uuid),
+        task_uuid=sparql_escape(task_uuid),
     )
     query_res = query(query_string)
-    return query_res['results']['bindings'][0]['job_uri']['value']
+    return query_res['results']['bindings'][0]['task_uri']['value']
 
 def redownload_dataset(dataset_uri):
     dataset_result = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))['results']['bindings'][0]
@@ -146,17 +143,17 @@ def redownload_dataset(dataset_uri):
     update_sudo(update_dataset_download(dataset_uri, file_uri, VOID_DATASET_GRAPH))
     return dataset_uri
 
-@app.route('/dataset-download-job/<job_uuid>/run', methods=['POST'])
-def run_dataset_download_route(job_uuid: str):
+@app.route('/dataset-download-task/<task_uuid>/run', methods=['POST'])
+def run_dataset_download_route(task_uuid: str):
     try:
-        job_uri = get_job_uri(job_uuid)
+        task_uri = get_task_uri(task_uuid)
     except Exception:
-        logger.info(f"No job found by uuid ${job_uuid}")
+        logger.info(f"No job found by uuid ${task_uuid}")
         return
 
-    run_job(
-        job_uri,
-        JOBS_GRAPH,
+    run_task(
+        task_uri,
+        TASKS_GRAPH,
         lambda sources: [redownload_dataset(sources[0])],
         query_sudo,
         update_sudo
@@ -185,36 +182,47 @@ def generate_dataset_structural_metadata(dataset_uri):
         update_sudo(query_string)
     return dataset_uri
 
-VOCAB_DOWNLOAD_JOB = "http://mu.semte.ch/vocabularies/ext/VocabDownloadJob"
-METADATA_EXTRACTION_JOB = "http://mu.semte.ch/vocabularies/ext/MetadataExtractionJob"
+VOCAB_DOWNLOAD_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabDownloadJob"
+METADATA_EXTRACTION_OPERATION = "http://mu.semte.ch/vocabularies/ext/MetadataExtractionJob"
 
 @app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
-    job_triple = next(filter(
-        lambda x: x['predicate']['value'] == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-        inserts
-    ))
-    job_uri = job_triple['subject']['value']
-    job_type = job_triple['object']['value']
-    
-    if job_type == VOCAB_DOWNLOAD_JOB:
-        run_job(
-            job_uri,
-            JOBS_GRAPH,
+    try:
+        task_triple = next(filter(
+            lambda x: x['predicate']['value'] == 'http://www.w3.org/ns/adms#status' and x['object']['value'] == 'http://redpencil.data.gift/id/concept/JobStatus/scheduled',
+            inserts
+        ))
+    except StopIteration:
+        return "Can't do anything with this delta. Skipping.", 500
+    task_uri = task_triple['subject']['value']
+
+    task_q = find_actionable_task(task_uri, TASKS_GRAPH)
+    task_res = query_sudo(task_q)
+    if task_res["results"]["bindings"]:
+        task_operation = [binding["operation"]['value'] for binding in task_res["results"]["bindings"] if "operation" in binding][0]
+    else:
+        return "Don't know how to handle task without operation type", 500
+
+    if task_operation == VOCAB_DOWNLOAD_OPERATION:
+        logger.debug(f"Running task {task_uri}, operation {task_operation}")
+        run_task(
+            task_uri,
+            TASKS_GRAPH,
             lambda sources: [redownload_dataset(sources[0])],
             query_sudo,
             update_sudo
         )
         return '', 200
-    elif job_type == METADATA_EXTRACTION_JOB:
-        run_job(
-            job_uri,
-            JOBS_GRAPH,
+    elif task_operation == METADATA_EXTRACTION_OPERATION:
+        logger.debug(f"Running task {task_uri}, operation {task_operation}")
+        run_task(
+            task_uri,
+            TASKS_GRAPH,
             lambda sources: [generate_dataset_structural_metadata(sources[0])],
             query_sudo,
             update_sudo
         )
         return '', 200
     else:
-        return "Don't know how to handle job of type " + job_type, 500
+        return "Don't know how to handle task with operation type " + task_operation, 500

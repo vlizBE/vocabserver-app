@@ -16,7 +16,7 @@ from sudo_query import query_sudo, auth_update_sudo as update_sudo
 from sparql_util import serialize_graph_to_sparql, sparql_construct_res_to_graph, load_file_to_db, drop_graph, \
     diff_graphs, copy_graph_to_temp
 
-from job import run_job
+from task import run_task, find_actionable_task
 from vocabulary import get_vocabulary
 from dataset import get_dataset
 
@@ -25,35 +25,14 @@ from remove_vocab import remove_files, select_vocab_concepts_batch, remove_vocab
 
 # Maybe make these configurable
 FILE_RESOURCE_BASE = 'http://example-resource.com/'
-JOBS_GRAPH = "http://mu.semte.ch/graphs/public"
+TASKS_GRAPH = "http://mu.semte.ch/graphs/public"
 TEMP_GRAPH_BASE = 'http://example-resource.com/graph/'
 VOCAB_GRAPH = "http://mu.semte.ch/graphs/public"
 UNIFICATION_TARGET_GRAPH = "http://mu.semte.ch/graphs/public"
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 TEMP_GRAPH_BASE = 'http://example-resource.com/graph/'
 
-CONT_UN_JOB_TYPE = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
-
-def get_job_uri(job_uuid: str, job_type: str, graph: str = MU_APPLICATION_GRAPH):
-    query_template = Template('''
-PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-
-SELECT DISTINCT ?job_uri WHERE {
-    GRAPH $graph {
-        ?job_uri a $job_type ;
-             mu:uuid $job_uuid .
-    }
-}
-''')
-
-    query_string = query_template.substitute(
-        graph=sparql_escape_uri(graph),
-        job_type=sparql_escape_uri(job_type),
-        job_uuid=sparql_escape(job_uuid),
-    )
-    query_res = sparql_query(query_string)
-    return query_res['results']['bindings'][0]['job_uri']['value']
+CONT_UN_OPERATION = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
 
 def run_vocab_unification(vocab_uri):
     vocab_sources = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))['results']['bindings']
@@ -96,26 +75,6 @@ def run_vocab_unification(vocab_uri):
 
     drop_graph(temp_named_graph)
 
-
-@app.route('/<job_uuid>', methods=['POST'])
-def run_vocab_unification_req(job_uuid: str):
-    try:
-        job_uri = get_job_uri(job_uuid, CONT_UN_JOB_TYPE)
-    except Exception:
-        logger.info(f"No job found by uuid {job_uuid}")
-        return
-    
-    run_job(
-        job_uri,
-        JOBS_GRAPH,
-        lambda sources: run_vocab_unification(sources[0]),
-        query_sudo,
-        update_sudo
-    )
-
-    return ''
-
-
 @app.route('/delete-vocabulary/<vocab_uuid>', methods=('DELETE',))
 def delete_vocabulary(vocab_uuid: str):
     remove_files(vocab_uuid, VOCAB_GRAPH)
@@ -144,17 +103,31 @@ def delete_vocabulary(vocab_uuid: str):
 @app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
-    job_triple = next(filter(
-        lambda x: x['predicate']['value'] == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-        inserts
-    ))
-    job_uri = job_triple['subject']['value']
-    
-    run_job(
-        job_uri,
-        JOBS_GRAPH,
-        lambda sources: run_vocab_unification(sources[0]),
-        query_sudo,
-        update_sudo
-    )
-    return '', 200
+    try:
+        task_triple = next(filter(
+            lambda x: x['predicate']['value'] == 'http://www.w3.org/ns/adms#status' and x['object']['value'] == 'http://redpencil.data.gift/id/concept/JobStatus/scheduled',
+            inserts
+        ))
+    except StopIteration:
+        return "Can't do anything with this delta. Skipping.", 500
+    task_uri = task_triple['subject']['value']
+
+    task_q = find_actionable_task(task_uri, TASKS_GRAPH)
+    task_res = query_sudo(task_q)
+    if task_res["results"]["bindings"]:
+        task_operation = [binding["operation"]['value'] for binding in task_res["results"]["bindings"] if "operation" in binding][0]
+    else:
+        return "Don't know how to handle task without operation type", 500
+
+    if task_operation == CONT_UN_OPERATION:
+        logger.debug(f"Running task {task_uri}, operation {task_operation}")
+        run_task(
+            task_uri,
+            TASKS_GRAPH,
+            lambda sources: [run_vocab_unification(sources[0])],
+            query_sudo,
+            update_sudo
+        )
+        return '', 200
+    else:
+        return "Don't know how to handle task with operation type " + task_operation, 500

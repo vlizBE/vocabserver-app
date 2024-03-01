@@ -56,12 +56,16 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/datasets/"
   end
 
-  get "/jobs/*path", @json do
+  match "/jobs/*path", @json do
     forward conn, path, "http://resource/jobs/"
   end
 
-  match "/vocab-download-jobs/*path", @json do
-    forward conn, path, "http://resource/vocab-download-jobs/"
+  match "/tasks/*path", @json do
+    forward conn, path, "http://resource/tasks/"
+  end
+
+  match "/data-containers/*path", @json do
+    forward conn, path, "http://resource/data-containers/"
   end
 
   match "/content-unification-jobs/*path", @json do

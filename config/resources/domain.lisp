@@ -2,8 +2,8 @@
 
 ;; reading in the domain.json
 (read-domain-file "domain.json")
-(read-domain-file "job.json")
 (read-domain-file "dataset.json")
+(read-domain-file "task.lisp")
 (read-domain-file "shacl.json")
 
 (define-resource file ()

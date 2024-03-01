@@ -32,6 +32,9 @@ defmodule Acl.UserGroups.Config do
                         "http://mu.semte.ch/vocabularies/ext/MetadataExtractionJob",
                         "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob",
                         "http://vocab.deri.ie/cogs#Job",
+                        "http://redpencil.data.gift/vocabularies/tasks/Task",
+                        "http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#DataContainer",
+                        "http://open-services.net/ns/core#Error",
                         "http://mu.semte.ch/vocabularies/ext/alias",
                       ]
                     } } ] },
