@@ -1,0 +1,34 @@
+name: Docker Images Build & Push to ghrc.io
+
+on:
+    push:
+        branches: [ "main" ]
+        tags: [ "*" ]
+    pull_request:
+        branches: [ "main" ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout the codebase
+          uses: actions/checkout@v3
+         
+        - name: Login to GitHub Container Registry
+          uses: docker/login-action@v1
+          with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+                
+        - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
+          run: | 
+            touch .env                                  # make sure we have one to satisfy the build
+            export REG_NS="ghcr.io/vlizBE/vocabserver-app"  # sets the public scope for these
+            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+                export BUILD_TAG="latest"                  # if push to main branch, use "latest" as Docker tag
+            else
+                export BUILD_TAG="${{ github.ref#refs/tags/ }}"       # if new tag, use the tag as Docker tag
+            fi
+            docker build -t $REG_NS:$BUILD_TAG .          # build the Docker image
+			docker push $REG_NS:$BUILD_TAG 
