@@ -28,7 +28,7 @@ jobs:
             if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
                 export BUILD_TAG="latest"                  # if push to main branch, use "latest" as Docker tag
             else
-                export BUILD_TAG="${{ github.ref#refs/tags/ }}"       # if new tag, use the tag as Docker tag
+                export BUILD_TAG=$(echo ${{ github.ref }} | sed 's|refs/tags/||')      # if new tag, use the tag as Docker tag
             fi
             docker build -t $REG_NS:$BUILD_TAG .          # build the Docker image
-			docker push $REG_NS:$BUILD_TAG 
+            docker push $REG_NS:$BUILD_TAG 
