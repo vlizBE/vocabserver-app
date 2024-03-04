@@ -3,7 +3,7 @@ name: Docker Images Build & Push to ghrc.io
 on:
     push:
         branches: [ "main" ]
-        tags: [ "*" ]
+        tags: [ "v*.*.*" ]
     pull_request:
         branches: [ "main" ]
 
