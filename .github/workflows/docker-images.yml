@@ -31,4 +31,4 @@ jobs:
               export BUILD_TAG="latest"                  # if not a new tag, use "latest" as Docker tag
             fi
             docker-compose build --build-arg REG_NS=$REG_NS --build-arg BUILD_TAG=$BUILD_TAG
-            docker-compose push $REG_NS:$BUILD_TAG
+            docker-compose push #$REG_NS:$BUILD_TAG
