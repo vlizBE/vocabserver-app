@@ -24,11 +24,11 @@ jobs:
         - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
           run: | 
             touch .env                                  # make sure we have one to satisfy the build
-            export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
+            export REG_NS="ghcr.io/cedricdcc/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
             if [[ "${{ github.ref }}" == "refs/tags/v*.*.*" ]]; then
               export BUILD_TAG=$(echo ${{ github.ref }} | sed 's|refs/tags/||')      # if new tag matches pattern "v*.*.*", use the tag as Docker tag
             else
               export BUILD_TAG="latest"                  # if not a new tag, use "latest" as Docker tag
             fi
             docker-compose build --build-arg REG_NS=$REG_NS --build-arg BUILD_TAG=$BUILD_TAG
-            docker-compose push #ghcr.io/vlizBE/vocabserver-app:$BUILD_TAG
+            docker-compose push #ghcr.io/cedricdcc/vocabserver-app:$BUILD_TAG
