@@ -188,41 +188,36 @@ METADATA_EXTRACTION_OPERATION = "http://mu.semte.ch/vocabularies/ext/MetadataExt
 @app.route('/delta', methods=['POST'])
 def process_delta():
     inserts = request.json[0]['inserts']
-    try:
-        task_triple = next(filter(
-            lambda x: x['predicate']['value'] == 'http://www.w3.org/ns/adms#status' and x['object']['value'] == 'http://redpencil.data.gift/id/concept/JobStatus/scheduled',
-            inserts
-        ))
-    except StopIteration:
+    task_triples = [t for t in inserts if t['predicate']['value'] == 'http://www.w3.org/ns/adms#status' and t['object']['value'] == 'http://redpencil.data.gift/id/concept/JobStatus/scheduled']
+    if not task_triples:
         return "Can't do anything with this delta. Skipping.", 500
-    task_uri = task_triple['subject']['value']
+    for task_triple in task_triples:  
+        task_uri = task_triple['subject']['value']
 
-    task_q = find_actionable_task(task_uri, TASKS_GRAPH)
-    task_res = query_sudo(task_q)
-    if task_res["results"]["bindings"]:
-        task_operation = [binding["operation"]['value'] for binding in task_res["results"]["bindings"] if "operation" in binding][0]
-    else:
-        return "Don't know how to handle task without operation type", 500
-
-    if task_operation == VOCAB_DOWNLOAD_OPERATION:
-        logger.debug(f"Running task {task_uri}, operation {task_operation}")
-        run_task(
-            task_uri,
-            TASKS_GRAPH,
-            lambda sources: [redownload_dataset(sources[0])],
-            query_sudo,
-            update_sudo
-        )
-        return '', 200
-    elif task_operation == METADATA_EXTRACTION_OPERATION:
-        logger.debug(f"Running task {task_uri}, operation {task_operation}")
-        run_task(
-            task_uri,
-            TASKS_GRAPH,
-            lambda sources: [generate_dataset_structural_metadata(sources[0])],
-            query_sudo,
-            update_sudo
-        )
-        return '', 200
-    else:
-        return "Don't know how to handle task with operation type " + task_operation, 500
+        task_q = find_actionable_task(task_uri, TASKS_GRAPH)
+        task_res = query_sudo(task_q)
+        if task_res["results"]["bindings"]:
+            task_operation = [binding["operation"]['value'] for binding in task_res["results"]["bindings"] if "operation" in binding][0]
+            if task_operation == VOCAB_DOWNLOAD_OPERATION:
+                logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                run_task(
+                    task_uri,
+                    TASKS_GRAPH,
+                    lambda sources: [redownload_dataset(sources[0])],
+                    query_sudo,
+                    update_sudo
+                )
+                return '', 200
+            elif task_operation == METADATA_EXTRACTION_OPERATION:
+                logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                run_task(
+                    task_uri,
+                    TASKS_GRAPH,
+                    lambda sources: [generate_dataset_structural_metadata(sources[0])],
+                    query_sudo,
+                    update_sudo
+                )
+                return '', 200
+            else:
+                logger.debug(f"Task {task_uri}, has unknown operation type {task_operation}")
+    return "Don't know how to do these tasks", 500  

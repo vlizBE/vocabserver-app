@@ -12,5 +12,23 @@
         "nextIndex": "1"
       }
     ]
+  },
+  "http://lblod.data.gift/id/jobs/concept/JobOperation/vocabs-export": {
+    "tasksConfiguration": [
+      {
+        "currentOperation": null,
+        "nextOperation": "http://mu.semte.ch/vocabularies/ext/VocabsExportJob",
+        "nextIndex": "0"
+      }
+    ]
+  },
+  "http://lblod.data.gift/id/jobs/concept/JobOperation/vocabs-import": {
+    "tasksConfiguration": [
+      {
+        "currentOperation": null,
+        "nextOperation": "http://mu.semte.ch/vocabularies/ext/VocabsImportJob",
+        "nextIndex": "0"
+      }
+    ]
   }
 }
