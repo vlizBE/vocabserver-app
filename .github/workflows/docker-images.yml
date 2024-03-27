@@ -1,34 +1,44 @@
 name: Docker Images Build & Push to ghrc.io
 
 on:
-    push:
-        branches: [ "main" ]
-        tags: [ "v*.*.*" ]
-    pull_request:
-        branches: [ "main" ]
+  push:
+    branches: ["main"]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-        - name: Checkout the codebase
-          uses: actions/checkout@v3
-         
-        - name: Login to GitHub Container Registry
-          uses: docker/login-action@v1
-          with:
-            registry: ghcr.io
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
-                
-        - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
-          run: | 
-            touch .env                                  # make sure we have one to satisfy the build
-            export REG_NS="ghcr.io/cedricdcc/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
-            if [[ "${{ github.ref }}" == "refs/tags/v*.*.*" ]]; then
-              export BUILD_TAG=$(echo ${{ github.ref }} | sed 's|refs/tags/||')      # if new tag matches pattern "v*.*.*", use the tag as Docker tag
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the codebase
+        uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
+        run: |
+          touch .env                                  # make sure we have one to satisfy the build
+          export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
+          if [[ "${{ github.ref }}" == "refs/tags/v*.*.*" ]]; then
+            export BUILD_TAG=$(echo ${{ github.ref }} | sed 's|refs/tags/||')      # if new tag matches pattern "v*.*.*", use the tag as Docker tag
+          else
+            export BUILD_TAG="latest"                  # if not a new tag, use "latest" as Docker tag
+          fi
+          docker-compose build --build-arg REG_NS=$REG_NS --build-arg BUILD_TAG=$BUILD_TAG
+
+          #check if there are images that were built
+          export DIMGS="vocab-fetch content-unification"
+
+          for img in $DIMGS; do
+            if [[ "$(docker images -q $REG_NS/$img:$BUILD_TAG 2> /dev/null)" != "" ]]; then
+              docker push $REG_NS/$img:$BUILD_TAG
             else
-              export BUILD_TAG="latest"                  # if not a new tag, use "latest" as Docker tag
+              echo "No image $REG_NS/$img:$BUILD_TAG found, skipping push"
             fi
-            docker-compose build --build-arg REG_NS=$REG_NS --build-arg BUILD_TAG=$BUILD_TAG
-            docker-compose push #ghcr.io/cedricdcc/vocabserver-app:$BUILD_TAG
+          done
