@@ -10,6 +10,11 @@
         "currentOperation": "http://mu.semte.ch/vocabularies/ext/VocabDownloadJob",
         "nextOperation": "http://mu.semte.ch/vocabularies/ext/MetadataExtractionJob",
         "nextIndex": "1"
+      },
+      {
+        "currentOperation": "http://mu.semte.ch/vocabularies/ext/MetadataExtractionJob",
+        "nextOperation": "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob",
+        "nextIndex": "2"
       }
     ]
   },

@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from string import Template
+import threading
 
 import requests
 from escape_helpers import sparql_escape, sparql_escape_uri
@@ -25,7 +26,11 @@ from rdflib.void import generateVoID
 
 from file import file_to_shared_uri, shared_uri_to_path
 from file import construct_get_file_query, construct_insert_file_query
-from task import run_task, find_actionable_task, start_download_task
+from task import (
+    find_actionable_task_of_type,
+    run_task,
+    start_download_task,
+)
 from sparql_util import serialize_graph_to_sparql
 
 from sparql_util import sparql_construct_res_to_graph, drop_graph, binding_results
@@ -42,27 +47,8 @@ VOCAB_EXPORT_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabsExportJob"
 VOCAB_IMPORT_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabsImportJob"
 
 VOCABULARY_TYPE = "http://mu.semte.ch/vocabularies/ext/VocabularyMeta"
-
-
-def get_task_uri(task_uuid: str, graph: str = MU_APPLICATION_GRAPH):
-    query_template = Template("""
-PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-
-SELECT DISTINCT ?task_uri WHERE {
-    GRAPH $graph {
-        ?task_uri task:operation <http://mu.semte.ch/vocabularies/ext/dataset-download-task>;
-             mu:uuid $task_uuid .
-    }
-}
-""")
-
-    query_string = query_template.substitute(
-        graph=sparql_escape_uri(graph),
-        task_uuid=sparql_escape(task_uuid),
-    )
-    query_res = query(query_string)
-    return query_res["results"]["bindings"][0]["task_uri"]["value"]
+DATA_DUMP_TYPE = "http://vocabsearch.data.gift/dataset-types/FileDump"
+LDES_TYPE = "http://vocabsearch.data.gift/dataset-types/LDES"
 
 
 def do_vocab_export(vocab_uris):
@@ -146,62 +132,80 @@ def import_vocab_configs(file_uri):
     # start a download task for the new vocabs
     for vocab_uri in new_vocab_uris:
         datasets_results = query_sudo(datasets_of_vocab(vocab_uri))
-        for dataset_uri in binding_results(datasets_results, "uri"):
-            # not all datasets are part of a vocabulary. A dataset has multiple `void:propertyPartition` Datasets
-            update_sudo(start_download_task(dataset_uri, TASKS_GRAPH))
+        for dataset_uri, data_type in binding_results(
+            datasets_results, ("uri", "data_type")
+        ):
+            if data_type == DATA_DUMP_TYPE:
+                update_sudo(start_download_task(dataset_uri, TASKS_GRAPH))
 
     return new_vocab_uris
+
+
+running_tasks_lock = threading.Lock()
+
+
+def run_tasks():
+    # run this function only once at a time to avoid overloading the service
+    acquired = running_tasks_lock.acquire(blocking=False)
+
+    if not acquired:
+        logger.debug("Already running `run_tasks`")
+        return
+
+    try:
+        while True:
+            task_q = find_actionable_task_of_type(
+                [VOCAB_EXPORT_OPERATION, VOCAB_IMPORT_OPERATION], TASKS_GRAPH
+            )
+            task_res = query_sudo(task_q)
+            if task_res["results"]["bindings"]:
+                (task_uri, task_operation) = binding_results(
+                    task_res, ("uri", "operation")
+                )[0]
+            else:
+                logger.debug("No more tasks found")
+                return
+            try:
+                if task_operation == VOCAB_EXPORT_OPERATION:
+                    logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                    run_task(
+                        task_uri,
+                        TASKS_GRAPH,
+                        lambda sources: do_vocab_export(sources),
+                        query_sudo,
+                        update_sudo,
+                    )
+                elif task_operation == VOCAB_IMPORT_OPERATION:
+                    logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                    run_task(
+                        task_uri,
+                        TASKS_GRAPH,
+                        lambda fileUris: import_vocab_configs(fileUris[0]),
+                        query_sudo,
+                        update_sudo,
+                    )
+            finally:
+                logger.warn(
+                    f"Problem while running task {task_uri}, operation {task_operation}"
+                )
+    finally:
+        running_tasks_lock.release()
 
 
 @app.route("/delta", methods=["POST"])
 def process_delta():
     inserts = request.json[0]["inserts"]
-    try:
-        task_triple = next(
-            filter(
-                lambda x: x["predicate"]["value"] == "http://www.w3.org/ns/adms#status"
-                and x["object"]["value"]
-                == "http://redpencil.data.gift/id/concept/JobStatus/scheduled",
-                inserts,
-            )
-        )
-    except StopIteration:
+    task_triples = [
+        t
+        for t in inserts
+        if t["predicate"]["value"] == "http://www.w3.org/ns/adms#status"
+        and t["object"]["value"]
+        == "http://redpencil.data.gift/id/concept/JobStatus/scheduled"
+    ]
+    if not task_triples:
         return "Can't do anything with this delta. Skipping.", 500
-    task_uri = task_triple["subject"]["value"]
 
-    task_q = find_actionable_task(task_uri, TASKS_GRAPH)
-    task_res = query_sudo(task_q)
-    if task_res["results"]["bindings"]:
-        task_operation = [
-            binding["operation"]["value"]
-            for binding in task_res["results"]["bindings"]
-            if "operation" in binding
-        ][0]
-    else:
-        return "Don't know how to handle task without operation type", 500
+    thread = threading.Thread(target=run_tasks)
+    thread.start()
 
-    if task_operation == VOCAB_EXPORT_OPERATION:
-        logger.debug(f"Running task {task_uri}, operation {task_operation}")
-        run_task(
-            task_uri,
-            TASKS_GRAPH,
-            lambda sources: do_vocab_export(sources),
-            query_sudo,
-            update_sudo,
-        )
-        return "", 200
-    elif task_operation == VOCAB_IMPORT_OPERATION:
-        logger.debug(f"Running task {task_uri}, operation {task_operation}")
-        run_task(
-            task_uri,
-            TASKS_GRAPH,
-            lambda fileUris: import_vocab_configs(fileUris[0]),
-            query_sudo,
-            update_sudo,
-        )
-        return "", 200
-    else:
-        return (
-            "Don't know how to handle task with operation type " + task_operation,
-            500,
-        )
+    return "", 200

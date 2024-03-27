@@ -50,6 +50,17 @@ def sparql_construct_res_to_graph(res):
         g.add((s, p, o))
     return g
 
+def binding_results(json_result, binded_values):
+  bindings = []
+  for binding in json_result["results"]["bindings"]:
+      if isinstance(binded_values, tuple):
+        values = tuple(binding[key]["value"] for key in binded_values)
+      else:
+        values = binding[binded_values]["value"]  
+      bindings.append(values)
+  return bindings
+
+
 def copy_graph_to_temp(graph, temp_named_graph=None):
     query_string = Template("""
 INSERT {

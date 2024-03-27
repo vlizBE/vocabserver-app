@@ -12,13 +12,14 @@ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 PREFIX dc: <http://purl.org/dc/terms/>
 
-SELECT DISTINCT (?page AS ?download_link) ?format ?download_url ?data_dump ?type ?dataset_graph
+SELECT DISTINCT (?page AS ?download_link) ?format ?download_url ?data_dump ?type ?dataset_graph ?vocab
 WHERE {
     GRAPH $graph {
         $dataset
             a void:Dataset ;
             foaf:page ?download_url ;
             dc:type ?type .
+        ?vocab ext:sourceDataset $dataset.    
         OPTIONAL { $dataset void:feature ?format . }
         OPTIONAL { $dataset void:dataDump ?data_dump . }
         OPTIONAL { $dataset ext:datasetGraph ?dataset_graph . }

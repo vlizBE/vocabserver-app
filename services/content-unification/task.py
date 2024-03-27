@@ -112,6 +112,34 @@ LIMIT 1
     )
     return query_string
 
+def find_actionable_task_of_type(types, graph):
+    query_template = Template("""
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+SELECT (?task as ?uri) (?uuid as ?id) ?created ?used ?operation WHERE {
+    GRAPH $graph {
+        ?task a task:Task ;
+            dct:created ?created ;
+            adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled> ;
+            task:operation ?operation ;
+            mu:uuid ?uuid .
+        OPTIONAL { ?task task:inputContainer/ext:content ?used }
+        VALUES ?operation {$task_types}
+    }
+} LIMIT 1
+""")
+    query_string = query_template.substitute(
+        graph=sparql_escape_uri(graph) if graph else "?g",
+        task_types = " ".join([sparql_escape_uri(uri) for uri in types])
+        )
+    return query_string
+
+
 def run_task(task_uri, graph, runner_func, sparql_query, sparql_update):
     # start_time = time.time()
 
@@ -126,7 +154,7 @@ def run_task(task_uri, graph, runner_func, sparql_query, sparql_update):
 
     sparql_update(update_task_status(task_uri, STATUS_BUSY, graph))
     try:
-        generated = runner_func(used)
+        generated = [result for result in runner_func(used) if result] # remove non-uri values
         if generated:
             logger.info(f"Running task <{task_uri}> with source <{used[0]}> generated <{generated[0]}>")
             sparql_update(attach_task_results_container(task_uri, generated, graph))

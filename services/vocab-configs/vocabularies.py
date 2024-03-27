@@ -260,11 +260,13 @@ WHERE {
 def datasets_of_vocab(vocab_uri, graph=DATA_GRAPH):
     query_template = Template("""
 PREFIX  ext:  <http://mu.semte.ch/vocabularies/ext/>
-SELECT DISTINCT ?uri
+PREFIX dcterms: <http://purl.org/dc/terms/>
+SELECT DISTINCT ?uri ?data_type
 WHERE { 
   GRAPH $graph { 
     $vocab_uri a   ext:VocabularyMeta .
     $vocab_uri ext:sourceDataset ?uri. 
+    ?uri dcterms:type ?data_type .
   }
 }
 """)
