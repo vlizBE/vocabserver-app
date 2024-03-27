@@ -101,6 +101,7 @@ services:
     logging: *default-logging
   vocab-fetch:
     build: ./services/vocab-fetch
+    image: ${REG_NS:-vocabserver-app}/vocab-fetch:${BUILD_TAG:-latest}
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/vocab-fetch/:/app
@@ -111,6 +112,7 @@ services:
     logging: *default-logging
   content-unification:
     build: ./services/content-unification
+    image: ${REG_NS:-vocabserver-app}/content-unification:${BUILD_TAG:-latest}
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/content-unification/:/app
