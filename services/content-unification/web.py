@@ -64,10 +64,7 @@ def run_vocab_unification(vocab_uri):
     ]
 
     if not vocab_sources:
-        logger.debug(
-            f"vocab {vocab_uri} does not have a mapping. Unification cancelled."
-        )
-        return
+        raise Exception(f"Vocab {vocab_uri} does not have a mapping. Unification cancelled.")
 
     temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
     for vocab_source in vocab_sources:
