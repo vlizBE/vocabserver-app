@@ -24,7 +24,7 @@ from sparql_util import (
     copy_graph_to_temp,
 )
 
-from task import find_actionable_task_of_type, run_task, find_actionable_task
+from task import find_actionable_task_of_type, find_same_scheduled_tasks, get_input_contents_task, run_task, find_actionable_task, run_tasks
 from vocabulary import get_vocabulary
 from dataset import get_dataset
 
@@ -152,7 +152,7 @@ def delete_vocabulary(vocab_uuid: str):
 running_tasks_lock = threading.Lock()
 
 
-def run_tasks():
+def run_scheduled_tasks():
     # run this function only once at a time to avoid overloading the service
     acquired = running_tasks_lock.acquire(blocking=False)
 
@@ -172,10 +172,15 @@ def run_tasks():
                 logger.debug("No more tasks found")
                 return
             try:
+                inputs_res =  query_sudo(get_input_contents_task(task_uri, TASKS_GRAPH))
+                inputs = binding_results(inputs_res, "content")
+                similar_tasks_res = query_sudo(find_same_scheduled_tasks(task_operation, inputs,  TASKS_GRAPH))
+                similar_tasks = binding_results(similar_tasks_res, "uri")
                 if task_operation == CONT_UN_OPERATION:
                     logger.debug(f"Running task {task_uri}, operation {task_operation}")
-                    run_task(
-                        task_uri,
+                    logger.debug(f"Updating at the same time: {' | '.join(similar_tasks)}")
+                    run_tasks(
+                        similar_tasks,
                         TASKS_GRAPH,
                         lambda sources: [run_vocab_unification(sources[0])],
                         query_sudo,
@@ -203,7 +208,7 @@ def process_delta():
     if not task_triples:
         return "Can't do anything with this delta. Skipping.", 500
 
-    thread = threading.Thread(target=run_tasks)
+    thread = threading.Thread(target=run_scheduled_tasks)
     thread.start()
 
     return "", 200
