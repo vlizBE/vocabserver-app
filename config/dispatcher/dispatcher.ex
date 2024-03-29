@@ -64,6 +64,22 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/tasks/"
   end
 
+  get "/files/:id/download", @any do
+    Proxy.forward conn, [], "http://file/files/" <> id <> "/download"
+  end
+
+  post "/files/*path", @any do
+    Proxy.forward conn, path, "http://file/files/"
+  end
+
+  delete "/files/*path", %{ accept: [ :json ] } do
+    Proxy.forward conn, path, "http://file/files/"
+  end
+
+  get "/files/*path", @json do
+    Proxy.forward conn, path, "http://resource/files/"
+  end
+
   match "/data-containers/*path", @json do
     forward conn, path, "http://resource/data-containers/"
   end

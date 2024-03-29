@@ -1,7 +1,7 @@
 from escape_helpers import sparql_escape_uri
 from helpers import logger, generate_uuid
 
-from sudo_query import query_sudo, update_sudo as update_virtuoso
+from sudo_query import query_sudo, direct_update_triplestore as update_virtuoso
 from file import construct_get_file_query, shared_uri_to_path
 
 import os
@@ -14,6 +14,17 @@ TEMP_GRAPH_BASE = 'http://example-resource.com/graph/'
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
 BATCH_SIZE = 100
+
+def binding_results(json_result, binded_values):
+  bindings = []
+  for binding in json_result["results"]["bindings"]:
+      if isinstance(binded_values, tuple):
+        values = tuple(binding[key]["value"] for key in binded_values)
+      else:
+        values = binding[binded_values]["value"]  
+      bindings.append(values)
+  return bindings
+
 # adapted from https://github.com/RDFLib/rdflib/issues/1704
 def serialize_graph_to_sparql(g, graph_name: str, operation="INSERT"):
     # Note that the Graph triples method yields triples in random order
@@ -49,17 +60,6 @@ def sparql_construct_res_to_graph(res):
         o = json_to_term(binding['o'])
         g.add((s, p, o))
     return g
-
-def binding_results(json_result, binded_values):
-  bindings = []
-  for binding in json_result["results"]["bindings"]:
-      if isinstance(binded_values, tuple):
-        values = tuple(binding[key]["value"] for key in binded_values)
-      else:
-        values = binding[binded_values]["value"]  
-      bindings.append(values)
-  return bindings
-
 
 def copy_graph_to_temp(graph, temp_named_graph=None):
     query_string = Template("""

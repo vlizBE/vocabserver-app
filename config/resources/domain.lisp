@@ -16,6 +16,6 @@
   :has-one `((file :via ,(s-prefix "nie:dataSource")
                    :inverse t
                    :as "download"))
-  :resource-base (s-url "http://data.example.com/files/")
+  :resource-base (s-url "http://example-resource.com/files/")
   :features `(include-uri)
   :on-path "files")
