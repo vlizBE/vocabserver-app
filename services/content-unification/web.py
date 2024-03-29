@@ -81,11 +81,19 @@ def run_vocab_unification(vocab_uri):
                 old_temp_named_graph = load_file_to_db(
                     dataset_versions[1]["data_dump"]["value"], VOCAB_GRAPH
                 )
+                # diffing now happens in triplestore. If we make sure everything gets stored
+                # as sorted ntriples files, this can be done on file basis. Would improve perf
+                # and avoid having to load everything to triplestore with python rdflib store
+                # as an intermediary (!)
                 diff_subjects = diff_graphs(old_temp_named_graph, new_temp_named_graph)
                 for diff_subjects_batch in batched(diff_subjects, 10):
                     query_sudo(delete_from_graph(diff_subjects_batch, VOCAB_GRAPH))
                 drop_graph(old_temp_named_graph)
         else:
+            # since we now also save ldes datasets to files, ldes datasets can also get
+            # cleanups that are made possible by diffing above.
+            # This should become a dead code path
+            # keep until we can assure that an ldes dataset always has a dump (still needs cron to trigger the dump download)
             copy_graph_to_temp(
                 dataset_versions[0]["dataset_graph"]["value"], temp_named_graph
             )
