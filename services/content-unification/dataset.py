@@ -11,15 +11,18 @@ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-SELECT (?page AS ?download_link) ?format ?download_url ?data_dump ?creation_date ?dataset_graph
+SELECT DISTINCT ?format ?download_url ?data_dump ?creation_date ?dataset_graph
 WHERE {
     GRAPH $graph {
         $dataset
             a void:Dataset .
         OPTIONAL {
-            $dataset void:dataDump ?data_dump ;
-            foaf:page ?download_url ;
-            void:feature ?format .
+            $dataset
+                foaf:page ?download_url ;
+                void:feature ?format .
+        }
+        OPTIONAL {
+            $dataset void:dataDump ?data_dump .
             ?data_dump dct:created ?creation_date .
         }
         OPTIONAL {
