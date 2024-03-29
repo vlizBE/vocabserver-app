@@ -44,7 +44,8 @@
         },
         "description": {
           "type": "string",
-          "predicate": "sh:description"
+          "predicate": "sh:description",
+          "_comment": "in shacl spec this is a non-structured string predicate. In our implementation however, this field contains the URI of the predicate to which we want to map this path (in string form)"
         },
         "minCount": {
           "type": "integer",
