@@ -114,6 +114,7 @@ services:
       - ./services/vocab-fetch/:/app
     # Run in dev mode to circument memory limitations
     environment:
+      MU_VIRTUOSO_ENDPOINT: "http://triplestore:8890/sparql"
       MODE: "development"
     restart: always
     logging: *default-logging

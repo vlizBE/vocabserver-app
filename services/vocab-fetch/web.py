@@ -17,7 +17,7 @@ from file import file_to_shared_uri, shared_uri_to_path
 from file import construct_get_file_query, construct_insert_file_query
 from task import find_actionable_task_of_type, run_task, find_actionable_task
 from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
-from sparql_util import binding_results, serialize_graph_to_sparql
+from sparql_util import binding_results, serialize_graph_to_sparql, graph_to_file
 from format_to_mime import FORMAT_TO_MIME_EXT
 
 # Maybe make these configurable
@@ -30,6 +30,7 @@ MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 VOID_DATASET_RESOURCE_BASE = "http://example-resource.com/void-dataset/"
 
 VOCAB_DOWNLOAD_JOB = "http://lblod.data.gift/id/jobs/concept/JobOperation/vocab-download"
+LDES_TYPE = "http://vocabsearch.data.gift/dataset-types/LDES"
 
 
 def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
@@ -144,9 +145,14 @@ SELECT DISTINCT ?task_uri WHERE {
 
 def redownload_dataset(dataset_uri):
     dataset_result = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))['results']['bindings'][0]
-    download_link = dataset_result['download_url']['value']
-    file_format = dataset_result['format']['value']
-    file_uri = download_vocab_file(download_link, file_format, FILES_GRAPH)
+    _type = dataset_result['type']['value']
+    if _type == LDES_TYPE:
+        graph = dataset_result['dataset_graph']['value']
+        file_uri = graph_to_file(graph, FILES_GRAPH)
+    else:
+        download_link = dataset_result['download_url']['value']
+        file_format = dataset_result['format']['value']
+        file_uri = download_vocab_file(download_link, file_format, FILES_GRAPH)
     update_sudo(update_dataset_download(dataset_uri, file_uri, VOID_DATASET_GRAPH))
     return dataset_uri
 
