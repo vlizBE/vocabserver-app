@@ -273,8 +273,7 @@ def run_tasks():
                         query_sudo,
                         update_sudo,
                     )
-
-            finally:
+            except:
                 logger.warn(
                     f"Problem while running task {task_uri}, operation {task_operation}"
                 )
