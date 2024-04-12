@@ -178,6 +178,8 @@ def run_dataset_download_route(task_uuid: str):
 
 def remove_old_metadata_from_graph(g, graph_name):
     for s, p, _ in g.triples((None, None, None)):
+        if p == URIRef('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'):
+            continue
         deletequery = "\n".join(
             [f"PREFIX {prefix}: {ns.n3()}" for prefix, ns in g.namespaces()]
         )
@@ -202,6 +204,10 @@ def generate_dataset_structural_metadata(dataset_uri, should_return_vocab):
     dataset_meta_g, dataset = generateVoID(
         dataset_contents_g, dataset=URIRef(dataset_uri)
     )
+    # We update dataset metadata by purging old and re-loadind new data (instead of applying the diff)
+    # This has some unexpected consequences, since ldes consumer-manager triggers on addition and
+    # removal of void:Datasets. Since our actual intention isn't to remove the whole object (including type), but
+    # rather to update more detailed properties, we exclude the `rdf:type` predicate from the removal process.
     remove_old_metadata_from_graph(dataset_meta_g, VOID_DATASET_GRAPH)
     for query_string in serialize_graph_to_sparql(dataset_meta_g, VOID_DATASET_GRAPH):
         update_sudo(query_string)
