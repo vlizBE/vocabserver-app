@@ -12,6 +12,73 @@ STATUS_SCHEDULED = 'http://redpencil.data.gift/id/concept/JobStatus/scheduled'
 STATUS_SUCCESS = 'http://redpencil.data.gift/id/concept/JobStatus/success'
 STATUS_FAILED = 'http://redpencil.data.gift/id/concept/JobStatus/failed'
 
+def create_download_task(dataset, graph=MU_APPLICATION_GRAPH):
+    job_uri_prefix = 'http://redpencil.data.gift/id/job/'
+    job_uuid = generate_uuid()
+    job_uri = job_uri_prefix + job_uuid
+    container_uri_prefix = 'http://redpencil.data.gift/id/container/'
+    container_uuid = generate_uuid()
+    container_uri = container_uri_prefix + container_uuid
+    task_uri_prefix = 'http://redpencil.data.gift/id/task/'
+    task_uuid = generate_uuid()
+    task_uri = task_uri_prefix + task_uuid
+    created = datetime.datetime.now()
+
+    query_template = Template("""
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+
+INSERT {
+    GRAPH $graph {
+        $job a cogs:Job;
+            dct:creator "empty";
+            adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled>;
+            dct:created $created ;
+            dct:modified $created ;
+            task:operation <http://lblod.data.gift/id/jobs/concept/JobOperation/vocab-download> .
+        $task_uri a task:Task ;
+            mu:uuid $task_uuid ;
+            dct:created $created ;
+            dct:modified $created ;
+            adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled> ;
+            task:operation <http://mu.semte.ch/vocabularies/ext/VocabDownloadJob> ;
+            dct:isPartOf $job ;
+            task:inputContainer $container .
+        $container a nfo:DataContainer ;
+            mu:uuid $container_uuid ;
+            ext:content $dataset .
+    }
+}
+WHERE {
+    GRAPH $graph {
+        ?task a task:Task .
+        FILTER NOT EXISTS {
+            ?task
+                adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled> ;
+                task:operation <http://mu.semte.ch/vocabularies/ext/VocabDownloadJob> ;
+                task:inputContainer / ext:content $dataset .
+        }
+    }
+}""")
+    query_string = query_template.substitute(
+        graph=sparql_escape_uri(graph) if graph else "?g",
+        job=sparql_escape_uri(job_uri),
+        task_uri=sparql_escape_uri(task_uri),
+        task_uuid=sparql_escape_string(task_uuid),
+        created=sparql_escape_datetime(created),
+        container_uuid=sparql_escape_string(container_uuid),
+        container=sparql_escape_uri(container_uri),
+        dataset=sparql_escape_uri(dataset)
+    )
+    return query_string
+
 def attach_task_results_container(task, results, graph=MU_APPLICATION_GRAPH):
     CONTAINER_URI_PREFIX = 'http://redpencil.data.gift/id/container/'
     container_uuid = generate_uuid()

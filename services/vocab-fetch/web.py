@@ -15,8 +15,9 @@ from rdflib.void import generateVoID
 
 from file import file_to_shared_uri, shared_uri_to_path
 from file import construct_get_file_query, construct_insert_file_query
-from task import find_actionable_task_of_type, run_task, find_actionable_task
+from task import find_actionable_task_of_type, run_task, find_actionable_task, create_download_task
 from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
+from ldes_dump import query_outdated_dump_ldes_datasets
 from sparql_util import binding_results, serialize_graph_to_sparql, graph_to_file
 from format_to_mime import FORMAT_TO_MIME_EXT
 
@@ -297,4 +298,13 @@ def process_delta():
     thread = threading.Thread(target=run_tasks)
     thread.start()
 
+    return "", 200
+
+@app.route("/check", methods=["POST"])
+def outdated():
+    datasets = query_outdated_dump_ldes_datasets()
+    for dataset in datasets:
+        qs = create_download_task(dataset, TASKS_GRAPH)
+        update_sudo(qs)
+    logger.info("datasets needing dump" + str(datasets))
     return "", 200
