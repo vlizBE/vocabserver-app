@@ -13,6 +13,9 @@ from sudo_query import query_sudo, update_sudo
 from rdflib import Graph, URIRef, Literal
 from rdflib.void import generateVoID
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+
 from file import file_to_shared_uri, shared_uri_to_path
 from file import construct_get_file_query, construct_insert_file_query
 from task import find_actionable_task_of_type, run_task, find_actionable_task, create_download_task
@@ -32,6 +35,8 @@ VOID_DATASET_RESOURCE_BASE = "http://example-resource.com/void-dataset/"
 
 VOCAB_DOWNLOAD_JOB = "http://lblod.data.gift/id/jobs/concept/JobOperation/vocab-download"
 LDES_TYPE = "http://vocabsearch.data.gift/dataset-types/LDES"
+
+UPDATE_DATASET_DUMP_CRON_PATTERN = os.environ.get("UPDATE_DATASET_DUMP_CRON_PATTERN")
 
 
 def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
@@ -281,6 +286,27 @@ def run_tasks():
     finally:
         running_tasks_lock.release()
 
+def update_ldes_dataset_dump():
+    logger.info("querying for LDES datasets with updates (requiring an update of their file-dump)")
+    datasets = query_outdated_dump_ldes_datasets()
+    if datasets:
+        logger.info("LDES datasets needing dump update: " + str(datasets))
+    for dataset in datasets:
+        logger.info(f"Creating dump task for dataset {dataset}")
+        qs = create_download_task(dataset, TASKS_GRAPH)
+        update_sudo(qs)
+
+
+
+if UPDATE_DATASET_DUMP_CRON_PATTERN:
+    # work around running the cron job twice in flask dev mode
+    # context: https://stackoverflow.com/questions/25504149/why-does-running-the-flask-dev-server-run-itself-twice
+    from werkzeug.serving import is_running_from_reloader
+    if is_running_from_reloader():
+        scheduler = BackgroundScheduler()
+        logger.info(f"Configuring dataset dump update cron interval {UPDATE_DATASET_DUMP_CRON_PATTERN}")
+        scheduler.add_job(update_ldes_dataset_dump, CronTrigger.from_crontab(UPDATE_DATASET_DUMP_CRON_PATTERN))
+        scheduler.start()
 
 @app.route("/delta", methods=["POST"])
 def process_delta():
@@ -300,11 +326,3 @@ def process_delta():
 
     return "", 200
 
-@app.route("/check", methods=["POST"])
-def outdated():
-    datasets = query_outdated_dump_ldes_datasets()
-    for dataset in datasets:
-        qs = create_download_task(dataset, TASKS_GRAPH)
-        update_sudo(qs)
-    logger.info("datasets needing dump" + str(datasets))
-    return "", 200
