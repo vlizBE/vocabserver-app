@@ -49,6 +49,7 @@ INSERT {
             dct:modified $created ;
             adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled> ;
             task:operation <http://mu.semte.ch/vocabularies/ext/VocabDownloadJob> ;
+            task:index "0" ;
             dct:isPartOf $job ;
             task:inputContainer $container .
         $container a nfo:DataContainer ;
