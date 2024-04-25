@@ -42,3 +42,12 @@ jobs:
               export BUILD_TAG="latest"
             fi
             echo $BUILD_TAG
+
+
+            DIMGS="content-unification vocab-configs vocab-fetch"
+            cd services            
+            for dimg in $DIMGS; do
+              echo "Building $REG_NS/$dimg:$BUILD_TAG"
+              docker build -t $REG_NS/$dimg:$BUILD_TAG -f $dimg/Dockerfile .
+              docker push $REG_NS/$dimg:$BUILD_TAG
+            done
