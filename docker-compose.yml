@@ -6,7 +6,7 @@ x-logging: &default-logging
     max-file: "3"
 services:
   frontend:
-    image: redpencil/frontend-vliz-vocabserver:2.2.0
+    image: redpencil/frontend-vliz-vocabserver:2.5.0
     restart: always
     logging: *default-logging
   identifier:
@@ -63,6 +63,14 @@ services:
       - ./config/migrations:/data/migrations
     restart: always
     logging: *default-logging
+  file:
+    image: semtech/mu-file-service:3.2.0
+    environment:
+      FILE_RESOURCE_BASE: "http://example-resource.com/files/"
+    volumes:
+      - ./data/files:/share
+    restart: always
+    logging: *default-logging  
   resource:
     image: semtech/mu-cl-resources:1.23.0
     links:
@@ -106,6 +114,8 @@ services:
       - ./services/vocab-fetch/:/app
     # Run in dev mode to circument memory limitations
     environment:
+      MU_VIRTUOSO_ENDPOINT: "http://triplestore:8890/sparql"
+      UPDATE_DATASET_DUMP_CRON_PATTERN: "5 * * * *" # hourly
       MODE: "development"
     restart: always
     logging: *default-logging
@@ -128,8 +138,8 @@ services:
       - ./config/uuid-generation/:/config
     restart: always
     logging: *default-logging
-  # webcomponent:
-  #   image: vocabsearch-webcomponent
+  webcomponent:
+    image: vocabsearch-webcomponent
   ldes-consumer-manager:
     image: redpencil/ldes-consumer-manager:0.1.0
     environment:
@@ -139,6 +149,17 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     restart: always
     logging: *default-logging
+  vocab-configs:
+    build: ./services/vocab-configs
+    environment:
+      MU_APPLICATION_FILE_STORAGE_PATH: "vocab-configs/"
+      MODE: "development"
+      MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
+      MU_SPARQL_DIRECT_UPDATEPOINT:  "http://triplestore:8890/sparql"
+      MU_AUTH_ENDPOINT: "http://database:8890/sparql"
+    volumes:
+      - ./data/files:/share
+      - ./services/vocab-configs/:/app
 networks:
   ldes-consumers:
     name: ldes-consumers
