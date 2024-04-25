@@ -1,7 +1,7 @@
 # Linked Data VocabTerms Lookup Service
 Vocabserver is a tool to make it easier to use existing vocabularies within your organization. 
 
-The aim of this project is to provide a service that allows 
+The aim of this project is to provide a service that allows:
  - to add selected existing vocabularies and glossaries by reference (ingest & sync) 
  - allow adding translations to the vocabularies where necessary
  - Access the harvested content to terms via a fast lookup API solution (full-text search on labels and filters on categories)
