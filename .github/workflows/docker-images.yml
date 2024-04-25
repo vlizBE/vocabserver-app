@@ -20,15 +20,25 @@ jobs:
             registry: ghcr.io
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
+        - name: Extract tag name
+          id: get_tag
+          run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
+        - name: Use tag name
+          run: echo ${{ steps.get_tag.outputs.TAG_NAME }}
                 
         - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
           run: | 
             touch .env                                  # make sure we have one to satisfy the build
             export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
-            if [[ "${{ github.ref }}" == "refs/tags/v*.*.*" ]]; then
-              export BUILD_TAG=$(echo ${{ github.ref }} | sed 's|refs/tags/||')      # if new tag matches pattern "v*.*.*", use the tag as Docker tag
+            TAG_NAME=${GITHUB_REF#refs/tags/}           # this is the tag name of the release
+            echo $TAG_NAME                             # this is the tag name of the release
+            # build tag is the same as tag name for releases if this matches the semver format else it is latest
+            # The string you want to check
+            # The regular expression
+            regex="^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$"
+            if [[ $TAG_NAME =~ $regex ]]; then
+              export BUILD_TAG=$TAG_NAME
             else
-              export BUILD_TAG="latest"                  # if not a new tag, use "latest" as Docker tag
+              export BUILD_TAG="latest"
             fi
-            docker-compose build --build-arg REG_NS=$REG_NS --build-arg BUILD_TAG=$BUILD_TAG
-            docker-compose push #$REG_NS:$BUILD_TAG
+            echo $BUILD_TAG
