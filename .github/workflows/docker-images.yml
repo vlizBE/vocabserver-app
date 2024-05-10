@@ -20,6 +20,13 @@ jobs:
             registry: ghcr.io
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
+        - name: install jq
+          run: sudo apt-get install jq
+        - name: Extract existing packages made by this repo into variable using gh api
+          run: |
+            echo "Existing packages made by this repo"
+            export PACKAGES = $(gh api repos/vlizbe/vocabserver-app/packages | jq '.[] | .name')
+            echo PACKAGES
         - name: Extract tag name
           id: get_tag
           run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
