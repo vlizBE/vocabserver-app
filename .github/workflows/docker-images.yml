@@ -28,6 +28,7 @@ jobs:
           env: 
             GH-TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
+            git fetch --unshallow
             export TAGS=$(curl -s https://api.github.com/repos/vlizBE/vocabserver-app/tags | jq -c '[.[] | {tag_name: .name, sha: .commit.sha}]')
             echo $TAGS
             # loop over $TAGS and echo the tag and the sha
