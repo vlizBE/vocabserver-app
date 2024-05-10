@@ -23,6 +23,8 @@ jobs:
         - name: install jq
           run: sudo apt-get install jq
         - name: Extract existing packages made by this repo into variable using gh api
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
             echo "Existing packages made by this repo"
             export PACKAGES = $(gh api repos/vlizbe/vocabserver-app/packages | jq '.[] | .name')
