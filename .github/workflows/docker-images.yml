@@ -46,8 +46,12 @@ jobs:
               cd services            
               for dimg in $DIMGS; do
                 echo "Building $REG_NS/$dimg:$TAG_NAME"
-                docker build -t $REG_NS/$dimg:$TAG_NAME -f $dimg/Dockerfile .
-                docker push $REG_NS/$dimg:$TAG_NAME
+                if docker build -t $REG_NS/$dimg:$TAG_NAME -f $dimg/Dockerfile .; then
+                  docker push $REG_NS/$dimg:$TAG_NAME
+                else
+                  echo "Error building the Docker image $REG_NS/$dimg:$TAG_NAME"
+                  continue
+                fi
               done
               cd ..
             done
