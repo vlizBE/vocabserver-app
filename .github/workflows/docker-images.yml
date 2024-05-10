@@ -27,7 +27,7 @@ jobs:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
             echo "Existing packages made by this repo"
-            export PACKAGES=$(gh api /users/vlizBE/packages?package_type=container | jq '.[] | .name')
+            export PACKAGES=$(gh api users/vlizBE/packages?package_type=container | jq '.[] | .name')
             echo PACKAGES | jq "[
                 {
                     container: \"$container\",
