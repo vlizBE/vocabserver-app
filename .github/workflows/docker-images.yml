@@ -26,15 +26,19 @@ jobs:
           env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
-            echo "Existing packages made by this repo"
-            export PACKAGES=$(gh api users/vlizBE/packages?package_type=container | jq '.[] | .name')
-            echo PACKAGES | jq "[
-                {
-                    container: \"$container\",
-                    name: .[].name,
-                    tags: .[].metadata.container.tags,
-                }
-            ]"
+            echo "Existing packages made by vlizBE org"
+            user="vlizBE"
+            containers=$(gh api /users/$user/packages?package_type=container | jq -r .[].name)
+            for container in $containers; do
+                versions=$(gh api /users/$user/packages/container/$container/versions)
+                echo $versions | jq "[
+                    {
+                        container: \"$container\",
+                        name: .[].name,
+                        tags: .[].metadata.container.tags,
+                    }
+                ]"
+            done
         - name: Extract tag name
           id: get_tag
           run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
