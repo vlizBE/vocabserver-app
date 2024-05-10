@@ -22,23 +22,11 @@ jobs:
             password: ${{ secrets.GITHUB_TOKEN }}
         - name: install jq
           run: sudo apt-get install jq
-        - name: Extract existing packages made by this repo into variable using gh api
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Extract all existing tags for the repo
           run: |
-            echo "Existing packages made by vlizBE org"
-            user="vlizBE"
-            containers=$(gh api /users/$user/packages?package_type=container | jq -r .[].name)
-            for container in $containers; do
-                versions=$(gh api /users/$user/packages/container/$container/versions)
-                echo $versions | jq "[
-                    {
-                        container: \"$container\",
-                        name: .[].name,
-                        tags: .[].metadata.container.tags,
-                    }
-                ]"
-            done
+            export TAGS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/tags | jq -r '.[].name')
+            echo $TAGS
+
         - name: Extract tag name
           id: get_tag
           run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
