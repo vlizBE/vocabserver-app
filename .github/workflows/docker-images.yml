@@ -25,8 +25,10 @@ jobs:
           run: sudo apt-get install jq
 
         - name: Extract all existing tags for the repo using gh api
+          env: 
+            GH-TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
-            export TAGS=$(curl -s https://api.github.com/repos/vlizBE/vocabserver-app/tags)
+            export TAGS=$(curl -s https://api.github.com/repos/vlizBE/vocabserver-app/tags | jq -r '.[].name')
             echo $TAGS
      
         - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
