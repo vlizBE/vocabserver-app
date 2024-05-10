@@ -27,7 +27,7 @@ jobs:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
             echo "Existing packages made by this repo"
-            export PACKAGES=$(gh api /users/vlizBE/vocabserver-app/packages | jq '.[] | .name')
+            export PACKAGES=$(gh api /users/vlizBE/packages | jq '.[] | .name')
             echo PACKAGES | jq "[
                 {
                     container: \"$container\",
