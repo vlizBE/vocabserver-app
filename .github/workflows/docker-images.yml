@@ -27,8 +27,14 @@ jobs:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
             echo "Existing packages made by this repo"
-            export PACKAGES=$(gh api /repos/vlizBE/vocabserver-app/packages | jq '.[] | .name')
-            echo PACKAGES
+            export PACKAGES=$(gh api /users/vlizBE/vocabserver-app/packages | jq '.[] | .name')
+            echo PACKAGES | jq "[
+                {
+                    container: \"$container\",
+                    name: .[].name,
+                    tags: .[].metadata.container.tags,
+                }
+            ]"
         - name: Extract tag name
           id: get_tag
           run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
