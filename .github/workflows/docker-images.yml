@@ -20,19 +20,25 @@ jobs:
             registry: ghcr.io
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
+
         - name: install jq
           run: sudo apt-get install jq
-        - name: Extract all existing tags for the repo
-          run: |
-            export TAGS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/tags | jq -r '.[].name')
-            echo $TAGS
 
-        - name: Extract tag name
-          id: get_tag
-          run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
-        - name: Use tag name
-          run: echo ${{ steps.get_tag.outputs.TAG_NAME }}
-                
+        - name: Extract all existing tags for the repo
+          id: get_tags
+          run: |
+            echo "::set-output name=tags::$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/tags | jq -r '.[].name')"
+
+        - name: Build docker images using sha of tags
+          run: |
+            IFS=', ' read -r -a tags <<< "${{ steps.get_tags.outputs.tags }}"
+            for tag in "${tags[@]}"; do
+              git checkout $tag
+              export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
+              TAG_NAME=${tag} # this is the tag name of the release
+              echo $TAG_NAME
+            done
+     
         - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
           run: | 
             touch .env                                  # make sure we have one to satisfy the build
