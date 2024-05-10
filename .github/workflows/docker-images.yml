@@ -37,8 +37,18 @@ jobs:
               }
               echo $(_jq '.tag_name')
               echo $(_jq '.sha')
+              # checkout container at the sha
+              git checkout $(_jq '.sha')
+              export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
+              TAG_NAME=$(_jq '.tag_name')           # this is the tag name of the release
+              DIMGS="content-unification vocab-configs vocab-fetch"
+              cd services            
+              for dimg in $DIMGS; do
+                echo "Building $REG_NS/$dimg:$BUILD_TAG"
+                docker build -t $REG_NS/$dimg:$BUILD_TAG -f $dimg/Dockerfile .
+                docker push $REG_NS/$dimg:$BUILD_TAG
+              done
             done
-     
         - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
           run: | 
             touch .env                                  # make sure we have one to satisfy the build
