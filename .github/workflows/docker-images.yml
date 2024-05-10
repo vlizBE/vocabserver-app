@@ -30,6 +30,17 @@ jobs:
           run: |
             export TAGS=$(curl -s https://api.github.com/repos/vlizBE/vocabserver-app/tags | jq -c '[.[] | {tag_name: .name, sha: .commit.sha}]')
             echo $TAGS
+        
+        - name: Build all containers for all tags
+          run: |
+            # loop over $TAGS and echo the tag and the sha
+            for row in $(echo "${TAGS}" | jq -r '.[] | @base64'); do
+              _jq() {
+                echo ${row} | base64 --decode | jq -r ${1}
+              }
+              echo $(_jq '.tag_name')
+              echo $(_jq '.sha')
+            done
      
         - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
           run: | 
