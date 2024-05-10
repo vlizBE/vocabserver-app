@@ -49,6 +49,7 @@ jobs:
                 docker build -t $REG_NS/$dimg:$TAG_NAME -f $dimg/Dockerfile .
                 docker push $REG_NS/$dimg:$TAG_NAME
               done
+              cd ..
             done
         - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
           run: | 
