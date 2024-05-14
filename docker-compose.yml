@@ -108,7 +108,7 @@ services:
     restart: always
     logging: *default-logging
   vocab-fetch:
-    build: ./services/vocab-fetch
+    image: ghcr.io/vlizbe/vocabserver-app/vocab-fetch:latest
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/vocab-fetch/:/app
@@ -120,7 +120,7 @@ services:
     restart: always
     logging: *default-logging
   content-unification:
-    build: ./services/content-unification
+    image: ghcr.io/vlizbe/vocabserver-app/content-unification:latest
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/content-unification/:/app
@@ -150,7 +150,7 @@ services:
     restart: always
     logging: *default-logging
   vocab-configs:
-    build: ./services/vocab-configs
+    image: ghcr.io/vlizbe/vocabserver-app/vocab-configs:latest
     environment:
       MU_APPLICATION_FILE_STORAGE_PATH: "vocab-configs/"
       MODE: "development"
