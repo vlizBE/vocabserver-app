@@ -6,7 +6,7 @@ x-logging: &default-logging
     max-file: "3"
 services:
   frontend:
-    image: redpencil/frontend-vliz-vocabserver:2.5.0
+    image: ghcr.io/vlizbe/vocabserver-frontend:latest
     restart: always
     logging: *default-logging
   identifier:
@@ -138,8 +138,8 @@ services:
       - ./config/uuid-generation/:/config
     restart: always
     logging: *default-logging
-  # webcomponent:
-  #   image: vocabsearch-webcomponent
+  webcomponent:
+    image: ghcr.io/vlizbe/vocabserver-webcomponent:latest
   ldes-consumer-manager:
     image: redpencil/ldes-consumer-manager:0.1.0
     environment:
