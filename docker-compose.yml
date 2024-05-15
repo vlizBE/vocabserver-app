@@ -6,7 +6,7 @@ x-logging: &default-logging
     max-file: "3"
 services:
   frontend:
-    image: ghcr.io/vlizbe/vocabserver-frontend:latest
+    image: ghcr.io/vlizbe/vocabserver-frontend:${TAG_VERSION}
     restart: always
     logging: *default-logging
   identifier:
@@ -108,7 +108,7 @@ services:
     restart: always
     logging: *default-logging
   vocab-fetch:
-    image: ghcr.io/vlizbe/vocabserver-app/vocab-fetch:latest
+    image: ghcr.io/vlizbe/vocabserver-app/vocab-fetch:${TAG_VERSION}
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/vocab-fetch/:/app
@@ -120,7 +120,7 @@ services:
     restart: always
     logging: *default-logging
   content-unification:
-    image: ghcr.io/vlizbe/vocabserver-app/content-unification:latest
+    image: ghcr.io/vlizbe/vocabserver-app/content-unification:${TAG_VERSION}
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/content-unification/:/app
@@ -139,7 +139,7 @@ services:
     restart: always
     logging: *default-logging
   webcomponent:
-    image: ghcr.io/vlizbe/vocabserver-webcomponent:latest
+    image: ghcr.io/vlizbe/vocabserver-webcomponent:${TAG_VERSION}
   ldes-consumer-manager:
     image: redpencil/ldes-consumer-manager:0.1.0
     environment:
@@ -150,7 +150,7 @@ services:
     restart: always
     logging: *default-logging
   vocab-configs:
-    image: ghcr.io/vlizbe/vocabserver-app/vocab-configs:latest
+    image: ghcr.io/vlizbe/vocabserver-app/vocab-configs:${TAG_VERSION}
     environment:
       MU_APPLICATION_FILE_STORAGE_PATH: "vocab-configs/"
       MODE: "development"
