@@ -1,81 +1,48 @@
 name: Docker Images Build & Push to ghrc.io
 
 on:
-    push:
-        branches: [ "main" ]
-        tags: [ "v*.*.*" ]
-    pull_request:
-        branches: [ "main" ]
+  push:
+    branches: ["main"]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-        - name: Checkout the codebase
-          uses: actions/checkout@v3
-         
-        - name: Login to GitHub Container Registry
-          uses: docker/login-action@v1
-          with:
-            registry: ghcr.io
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the codebase
+        uses: actions/checkout@v3
 
-        - name: install jq
-          run: sudo apt-get install jq
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-        - name: Extract all existing tags and sha's for the repo using gh api and build containers
-          env: 
-            GH-TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          run: |
-            git fetch --unshallow
-            export TAGS=$(curl -s https://api.github.com/repos/vlizBE/vocabserver-app/tags | jq -c '[.[] | {tag_name: .name, sha: .commit.sha}]')
-            echo $TAGS
-            # loop over $TAGS and echo the tag and the sha
-            for row in $(echo "${TAGS}" | jq -r '.[] | @base64'); do
-              _jq() {
-                echo ${row} | base64 --decode | jq -r ${1}
-              }
-              echo $(_jq '.tag_name')
-              echo $(_jq '.sha')
-              # checkout container at the sha
-              git checkout $(_jq '.sha')
-              export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
-              TAG_NAME=$(_jq '.tag_name')           # this is the tag name of the release
-              DIMGS="content-unification vocab-configs vocab-fetch"
-              cd services            
-              for dimg in $DIMGS; do
-                echo "Building $REG_NS/$dimg:$TAG_NAME"
-                docker build -t $REG_NS/$dimg:$TAG_NAME -f $dimg/Dockerfile . || {
-                  echo "Error building the Docker image $REG_NS/$dimg:$TAG_NAME"
-                  continue
-                }
-                docker push $REG_NS/$dimg:$TAG_NAME
-              done
-              cd ..
-            done
-        - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
-          run: | 
-            touch .env                                  # make sure we have one to satisfy the build
-            export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
-            TAG_NAME=${GITHUB_REF#refs/tags/}           # this is the tag name of the release
-            echo $TAG_NAME                             # this is the tag name of the release
-            # build tag is the same as tag name for releases if this matches the semver format else it is latest
-            # The string you want to check
-            # The regular expression
-            regex="^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$"
-            if [[ $TAG_NAME =~ $regex ]]; then
-              export BUILD_TAG=$TAG_NAME
-            else
-              export BUILD_TAG="latest"
-            fi
-            echo $BUILD_TAG
+      - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
+        run: |
+          touch .env                                  # make sure we have one to satisfy the build
+          export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
+          TAG_NAME=${GITHUB_REF#refs/tags/}           # this is the tag name of the release
+          echo $TAG_NAME                             # this is the tag name of the release
+          # build tag is the same as tag name for releases if this matches the semver format else it is latest
+          # The string you want to check
+          # The regular expression
+          regex="^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$"
+          if [[ $TAG_NAME =~ $regex ]]; then
+            export BUILD_TAG=$TAG_NAME
+          else
+            export BUILD_TAG="latest"
+          fi
+          echo $BUILD_TAG
 
 
-            DIMGS="content-unification vocab-configs vocab-fetch"
-            cd services            
-            for dimg in $DIMGS; do
-              echo "Building $REG_NS/$dimg:$BUILD_TAG"
-              docker build -t $REG_NS/$dimg:$BUILD_TAG -f $dimg/Dockerfile .
-              docker push $REG_NS/$dimg:$BUILD_TAG
-            done
+          DIMGS="content-unification vocab-configs vocab-fetch"
+          cd services            
+          for dimg in $DIMGS; do
+            echo "Building $REG_NS/$dimg:$BUILD_TAG"
+            docker build -t $REG_NS/$dimg:$BUILD_TAG -f $dimg/Dockerfile .
+            docker push $REG_NS/$dimg:$BUILD_TAG
+          done

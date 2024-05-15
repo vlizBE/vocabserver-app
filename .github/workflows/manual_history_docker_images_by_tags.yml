@@ -1,0 +1,54 @@
+# This workflow is meant to be manually triggered to update the history of the Docker images by tags.
+
+name: Manual History Docker Images by Tags
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the codebase
+        uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install jq
+        run: sudo apt-get install jq
+
+      - name: Extract all existing tags and sha's for the repo using gh api and build containers
+        env:
+          GH-TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch --unshallow
+          export TAGS=$(curl -s https://api.github.com/repos/vlizBE/vocabserver-app/tags | jq -c '[.[] | {tag_name: .name, sha: .commit.sha}]')
+          echo $TAGS
+          # loop over $TAGS and echo the tag and the sha
+          for row in $(echo "${TAGS}" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo ${row} | base64 --decode | jq -r ${1}
+            }
+            echo $(_jq '.tag_name')
+            echo $(_jq '.sha')
+            # checkout container at the sha
+            git checkout $(_jq '.sha')
+            export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
+            TAG_NAME=$(_jq '.tag_name')           # this is the tag name of the release
+            DIMGS="content-unification vocab-configs vocab-fetch"
+            cd services            
+            for dimg in $DIMGS; do
+              echo "Building $REG_NS/$dimg:$TAG_NAME"
+              docker build -t $REG_NS/$dimg:$TAG_NAME -f $dimg/Dockerfile . || {
+                echo "Error building the Docker image $REG_NS/$dimg:$TAG_NAME"
+                continue
+              }
+              docker push $REG_NS/$dimg:$TAG_NAME
+            done
+            cd ..
+          done
