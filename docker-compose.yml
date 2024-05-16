@@ -111,7 +111,6 @@ services:
     image: ghcr.io/vlizbe/vocabserver-app/vocab-fetch:${TAG_VERSION}
     volumes:
       - ./data/vocab-fetch:/share
-      - ./services/vocab-fetch/:/app
     # Run in dev mode to circument memory limitations
     environment:
       MU_VIRTUOSO_ENDPOINT: "http://triplestore:8890/sparql"
@@ -123,7 +122,6 @@ services:
     image: ghcr.io/vlizbe/vocabserver-app/content-unification:${TAG_VERSION}
     volumes:
       - ./data/vocab-fetch:/share
-      - ./services/content-unification/:/app
     environment:
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
@@ -159,7 +157,6 @@ services:
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
     volumes:
       - ./data/files:/share
-      - ./services/vocab-configs/:/app
 networks:
   ldes-consumers:
     name: ldes-consumers
