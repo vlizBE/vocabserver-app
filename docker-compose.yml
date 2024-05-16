@@ -124,7 +124,7 @@ services:
   content-unification:
     build:
       context: ./services/content-unification
-    image: ghcr.io/vlizbe/vocabserver-app/content-unification:${TAG_VERSION}
+    image: ghcr.io/vlizbe/vocabserver-app/content-unification:${TAG_VERSION:-latest}
     volumes:
       - ./data/vocab-fetch:/share
       - ./services/content-unification/:/app
@@ -143,7 +143,7 @@ services:
     restart: always
     logging: *default-logging
   webcomponent:
-    image: ghcr.io/vlizbe/vocabserver-webcomponent:${TAG_VERSION}
+    image: ghcr.io/vlizbe/vocabserver-webcomponent:${TAG_VERSION:-latest}
   ldes-consumer-manager:
     image: redpencil/ldes-consumer-manager:0.1.0
     environment:
@@ -156,7 +156,7 @@ services:
   vocab-configs:
     build:
       context: ./services/vocab-configs
-    image: ghcr.io/vlizbe/vocabserver-app/vocab-configs:${TAG_VERSION}
+    image: ghcr.io/vlizbe/vocabserver-app/vocab-configs:${TAG_VERSION:-latest}
     environment:
       MU_APPLICATION_FILE_STORAGE_PATH: "vocab-configs/"
       MODE: "development"
