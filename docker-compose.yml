@@ -108,6 +108,8 @@ services:
     restart: always
     logging: *default-logging
   vocab-fetch:
+    build:
+      context: ./services/vocab-fetch
     image: ghcr.io/vlizbe/vocabserver-app/vocab-fetch:${TAG_VERSION}
     volumes:
       - ./data/vocab-fetch:/share
@@ -120,6 +122,8 @@ services:
     restart: always
     logging: *default-logging
   content-unification:
+    build:
+      context: ./services/content-unification
     image: ghcr.io/vlizbe/vocabserver-app/content-unification:${TAG_VERSION}
     volumes:
       - ./data/vocab-fetch:/share
@@ -150,6 +154,8 @@ services:
     restart: always
     logging: *default-logging
   vocab-configs:
+    build:
+      context: ./services/vocab-configs
     image: ghcr.io/vlizbe/vocabserver-app/vocab-configs:${TAG_VERSION}
     environment:
       MU_APPLICATION_FILE_STORAGE_PATH: "vocab-configs/"
