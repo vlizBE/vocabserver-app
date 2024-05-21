@@ -85,10 +85,14 @@ services:
       - ./config/search:/config
     restart: always
     logging: *default-logging
+    environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx4g"    
   elasticsearch:
     image: semtech/mu-search-elastic-backend:1.0.0
     volumes:
       - ./data/elasticsearch/:/usr/share/elasticsearch/data
+    environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx4g"      
     ulimits:
       nproc: 65536
       nofile:
