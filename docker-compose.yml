@@ -6,7 +6,7 @@ x-logging: &default-logging
     max-file: "3"
 services:
   frontend:
-    image: ghcr.io/vlizbe/vocabserver-frontend:${TAG_VERSION}
+    image: ghcr.io/vlizbe/vocabserver-frontend:${BUILD_TAG}
     restart: always
     logging: *default-logging
   identifier:
@@ -113,7 +113,7 @@ services:
   vocab-fetch:
     build:
       context: ./services/vocab-fetch
-    image: ghcr.io/vlizbe/vocabserver-app/vocab-fetch:${TAG_VERSION}
+    image: ${REG_NS:-vocabserver_app}/vocab-fetch:${BUILD_TAG}
     volumes:
       - ./data/vocab-fetch:/share
     # Run in dev mode to circument memory limitations
@@ -126,7 +126,7 @@ services:
   content-unification:
     build:
       context: ./services/content-unification
-    image: ghcr.io/vlizbe/vocabserver-app/content-unification:${TAG_VERSION:-latest}
+    image: ${REG_NS:-vocabserver_app}/content-unification:${BUILD_TAG:-latest}
     volumes:
       - ./data/vocab-fetch:/share
     environment:
@@ -144,7 +144,7 @@ services:
     restart: always
     logging: *default-logging
   webcomponent:
-    image: ghcr.io/vlizbe/vocabserver-webcomponent:${TAG_VERSION:-latest}
+    image: ghcr.io/vlizbe/vocabserver-webcomponent:${BUILD_TAG:-latest}
   ldes-consumer-manager:
     image: redpencil/ldes-consumer-manager:0.1.0
     environment:
@@ -157,7 +157,7 @@ services:
   vocab-configs:
     build:
       context: ./services/vocab-configs
-    image: ghcr.io/vlizbe/vocabserver-app/vocab-configs:${TAG_VERSION:-latest}
+    image: ${REG_NS:-vocabserver_app}/vocab-configs:${BUILD_TAG:-latest}
     environment:
       MU_APPLICATION_FILE_STORAGE_PATH: "vocab-configs/"
       MODE: "development"
