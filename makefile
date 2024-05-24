@@ -33,7 +33,7 @@ ifeq ($(shell echo ${REG_NS} | egrep '.+/.+'),)  # the 'shell' call is essential
 else
 # note the double $$ on dn distinction between makefile and shell var expansion
 	@for dn in "${DIMGS}"; do \
-		docker push ${REG_NS}/${PROJECT}_$${dn}:${BUILD_TAG}; \
+		docker push ${REG_NS}/${PROJECT}/$${dn}:${BUILD_TAG}; \
 	done;
 endif
 

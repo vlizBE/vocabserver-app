@@ -24,7 +24,7 @@ jobs:
       - name: Build the Docker images and Push them to the registry-namespace indicated in REG_NS
         run: |
           touch .env                                  # make sure we have one to satisfy the build
-          export REG_NS="ghcr.io/vlizbe/vocabserver-app"  # sets the public scope for these, no uppercases are allowed
+          export REG_NS="ghcr.io/vlizbe"  # sets the public scope for these, no uppercases are allowed
           TAG_NAME=${GITHUB_REF#refs/tags/}           # this is the tag name of the release
           echo $TAG_NAME                             # this is the tag name of the release
           # build tag is the same as tag name for releases if this matches the semver format else it is latest
