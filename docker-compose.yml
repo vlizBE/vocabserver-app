@@ -99,6 +99,9 @@ services:
     environment:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms1g -Xmx4g"
+      - "cluster.routing.allocation.disk.watermark.low=96%"
+      - "cluster.routing.allocation.disk.watermark.high=97%"
+      - "cluster.routing.allocation.disk.watermark.flood_stage=98%"
     restart: always
     logging: *default-logging
   job-controller:
@@ -120,7 +123,7 @@ services:
     environment:
       MU_VIRTUOSO_ENDPOINT: "http://triplestore:8890/sparql"
       UPDATE_DATASET_DUMP_CRON_PATTERN: "5 * * * *" # hourly
-      MODE: "development"
+      MODE: "${MODE:-production}"
     restart: always
     logging: *default-logging
   content-unification:
@@ -134,7 +137,7 @@ services:
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
       # Run in dev mode to circumvent memory limitations
-      MODE: "development"
+      MODE: "${MODE:-production}"
     restart: always
     logging: *default-logging
   uuid-generation:
@@ -150,6 +153,7 @@ services:
     environment:
       MU_NETWORK: ldes-consumers
       CONSUMER_IMAGE: redpencil/ldes-consumer:feature-consumer-status
+      MODE: "${MODE:-production}"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     restart: always
@@ -160,7 +164,7 @@ services:
     image: ${REG_NS:-vocabserver_app}/vocab-configs:${BUILD_TAG:-latest}
     environment:
       MU_APPLICATION_FILE_STORAGE_PATH: "vocab-configs/"
-      MODE: "development"
+      MODE: "${MODE:-production}"
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_DIRECT_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
