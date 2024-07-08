@@ -117,6 +117,8 @@ services:
     restart: always
     logging: *default-logging
   vocab-fetch:
+    build:
+      context: ./services/vocab-fetch
     image: ${REG_NS:-vocabserver_app}/vocab-fetch:${BUILD_TAG}
     volumes:
       - ./data/vocab-fetch:/share
