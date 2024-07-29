@@ -146,10 +146,11 @@ services:
   webcomponent:
     image: ghcr.io/vlizbe/vocabserver-webcomponent:${BUILD_TAG:-latest}
   ldes-consumer-manager:
-    image: redpencil/ldes-consumer-manager:0.1.0
+    image: redpencil/ldes-consumer-manager:feature-compose-project
     environment:
       MU_NETWORK: ldes-consumers
       CONSUMER_IMAGE: redpencil/ldes-consumer:feature-consumer-status
+      COMPOSE_PROJECT: "vocabserver-app"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     restart: always
