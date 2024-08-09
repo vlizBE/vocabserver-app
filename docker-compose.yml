@@ -152,7 +152,7 @@ services:
   webcomponent:
     image: ghcr.io/vlizbe/vocabserver-webcomponent:${BUILD_TAG:-latest}
   ldes-consumer-manager:
-    image: redpencil/ldes-consumer-manager:0.1.0
+    image: redpencil/ldes-consumer-manager:feature-fix-duplicate-start
     environment:
       MU_NETWORK: ldes-consumers
       CONSUMER_IMAGE: redpencil/ldes-consumer:feature-consumer-status
