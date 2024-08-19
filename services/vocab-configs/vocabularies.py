@@ -60,9 +60,9 @@ def copy_vocabs_configs_from_graph(graph_orig, graph_target=DATA_GRAPH):
                 dcterms:type ?type;
                 foaf:page ?page;
                 mu:uuid ?sourceUuid;
-                void:feature ?format;
                 ext:maxRequests ?maxRequests;
                 ext:dereferenceMembers ?derefMembers.
+            OPTIONAL { ?sourceDataset void:feature ?format . }
         } UNION {
             ?vocab ext:mappingShape ?mappingShape.
             {
