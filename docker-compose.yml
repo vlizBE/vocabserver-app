@@ -122,11 +122,11 @@ services:
     image: ${REG_NS:-vocabserver_app}/vocab-fetch:${BUILD_TAG}
     volumes:
       - ./data/vocab-fetch:/share
-    # Run in dev mode to circument memory limitations
     environment:
       MU_VIRTUOSO_ENDPOINT: "http://triplestore:8890/sparql"
       UPDATE_DATASET_DUMP_CRON_PATTERN: "5 * * * *" # hourly
-      MODE: "${MODE:-production}"
+      # FIXME: always run in dev mode to circumvent memory limitations
+      MODE: "development"
     restart: always
     logging: *default-logging
   content-unification:
@@ -139,8 +139,8 @@ services:
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
-      # Run in dev mode to circumvent memory limitations
-      MODE: "${MODE:-production}"
+      # FIXME: always run in dev mode to circumvent memory limitations
+      MODE: "development"
     restart: always
     logging: *default-logging
   uuid-generation:

@@ -14,12 +14,13 @@ services:
   triplestore:
     ports:
       - "8890:8890"
+  ldes-consumer-manager:
+    environment:
+      LOG_LEVEL: "DEBUG"
   vocab-fetch:
     environment:
-      MODE: "development"
       LOG_LEVEL: "DEBUG"
   content-unification:
     environment:
-      MODE: "development"
       LOG_LEVEL: "DEBUG"
 
