@@ -88,7 +88,7 @@ services:
     restart: always
     logging: *default-logging
     environment:
-      ES_JAVA_OPTS: "-Xms1g -Xmx4g"    
+      JAVA_OPTS: "-Xms1g -Xmx4g"    
   elasticsearch:
     image: semtech/mu-search-elastic-backend:1.0.0
     volumes:
