@@ -35,8 +35,7 @@ def copy_vocabs_configs_from_graph(graph_orig, graph_target=DATA_GRAPH):
             foaf:page ?page;
             mu:uuid ?sourceUuid;
             void:feature ?format;
-            ext:maxRequests ?maxRequests;
-            ext:dereferenceMembers ?derefMembers.
+            ext:maxRequests ?maxRequests .
     ?mappingShape a shacl:NodeShape ;
                   mu:uuid ?msUuid ;
                   shacl:targetClass ?msTargetClass ;
@@ -60,8 +59,7 @@ def copy_vocabs_configs_from_graph(graph_orig, graph_target=DATA_GRAPH):
                 dcterms:type ?type;
                 foaf:page ?page;
                 mu:uuid ?sourceUuid;
-                ext:maxRequests ?maxRequests;
-                ext:dereferenceMembers ?derefMembers.
+                ext:maxRequests ?maxRequests .
             OPTIONAL { ?sourceDataset void:feature ?format . }
         } UNION {
             ?vocab ext:mappingShape ?mappingShape.
@@ -118,8 +116,7 @@ CONSTRUCT {
          dcterms:type ?type;
          foaf:page ?page;
          void:feature ?format;
-         ext:maxRequests ?maxRequests;
-         ext:dereferenceMembers ?derefMembers.
+         ext:maxRequests ?maxRequests .
 } WHERE {
   GRAPH $graph {
     VALUES ?vocab { $vocab_uris }
@@ -134,9 +131,8 @@ CONSTRUCT {
                 mu:uuid ?sdUuid;
                 dcterms:type ?type;
                 foaf:page ?page;
-                ext:maxRequests ?maxRequests;
-                ext:dereferenceMembers ?derefMembers.
-            OPTIONAL { 
+                ext:maxRequests ?maxRequests .
+            OPTIONAL {
               ?sourceDataset void:feature ?format .
             }
         } UNION {
