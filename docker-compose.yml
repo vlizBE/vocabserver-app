@@ -151,8 +151,7 @@ services:
   webcomponent:
     image: ghcr.io/vlizbe/vocabserver-webcomponent:${BUILD_TAG:-latest}
   ldes-consumer-manager:
-    # TODO: use image that has both fix-duplicate-start AND compose project support
-    image: redpencil/ldes-consumer-manager:feature-fix-duplicate-start
+    image: redpencil/ldes-consumer-manager:feature-client-upgrade
     environment:
       MU_NETWORK: ldes-consumers
       MODE: "${MODE:-production}"
