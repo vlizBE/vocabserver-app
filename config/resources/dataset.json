@@ -60,10 +60,6 @@
         "max-requests": {
           "type": "integer",
           "predicate": "ext:maxRequests"
-        },
-        "dereference-members": {
-          "type": "bool",
-          "predicate": "ext:dereferenceMembers"
         }
       },
       "relationships": {

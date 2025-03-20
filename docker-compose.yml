@@ -82,7 +82,7 @@ services:
     restart: always
     logging: *default-logging
   search:
-    image: semtech/mu-search:0.10.0-beta.5
+    image: semtech/mu-search:0.10.0
     volumes:
       - ./config/search:/config
     restart: always
@@ -151,12 +151,11 @@ services:
   webcomponent:
     image: ghcr.io/vlizbe/vocabserver-webcomponent:${BUILD_TAG:-latest}
   ldes-consumer-manager:
-    # TODO: use image that has both fix-duplicate-start AND compose project support
-    image: redpencil/ldes-consumer-manager:feature-fix-duplicate-start
+    image: redpencil/ldes-consumer-manager:feature-client-upgrade
     environment:
       MU_NETWORK: ldes-consumers
-      CONSUMER_IMAGE: redpencil/ldes-consumer:feature-consumer-status
       MODE: "${MODE:-production}"
+      CONSUMER_IMAGE: redpencil/ldes-consumer:0.9.0
       COMPOSE_PROJECT: "vocabserver-app"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
