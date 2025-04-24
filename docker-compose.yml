@@ -150,7 +150,7 @@ services:
   webcomponent:
     image: ghcr.io/vlizbe/vocabserver-webcomponent:${BUILD_TAG:-latest}
   ldes-consumer-manager:
-    image: redpencil/ldes-consumer-manager:feature-client-upgrade
+    image: redpencil/ldes-consumer-manager:feature-new-client-use-exising-graph
     environment:
       MU_NETWORK: ldes-consumers
       MODE: "${MODE:-production}"
