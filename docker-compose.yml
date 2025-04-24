@@ -34,11 +34,12 @@ services:
     restart: always
     logging: *default-logging
   database:
-    image: semtech/mu-authorization:0.6.0-beta.8
+    image: semtech/sparql-parser:0.0.14
     environment:
       MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
     volumes:
-      - ./config/authorization:/config
+      - ./config/cl-authorization:/config
+      - ./data/cl-authorization:/data
     networks:
       - default
       - ldes-consumers
