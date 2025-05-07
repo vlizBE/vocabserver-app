@@ -31,12 +31,11 @@ def update_sudo(the_query, attempt=0, max_retries=5):
     if sparqlUpdate.isSparqlUpdateRequest():
         try:
             start = time.time()
-            logger.debug(f"started query at {datetime.datetime.now()}")
             logger.debug("execute query: \n" + the_query)
 
             sparqlUpdate.query()
 
-            logger.debug(f"query took {time.time() - start} seconds")
+            logger.debug(f"Query took {round((time.time() - start) * 10**3)} ms")
         except Exception as e:
             logger.warn("Executing query failed unexpectedly. Stacktrace:", e)
             if attempt <= max_retries:
@@ -55,9 +54,8 @@ def auth_update_sudo(the_query):
     authSparqlUpdate.setQuery(the_query)
     if authSparqlUpdate.isSparqlUpdateRequest():
         start = time.time()
-        logger.debug(f"started query at {datetime.datetime.now()}")
         logger.debug("execute query: \n" + the_query)
 
         authSparqlUpdate.query()
 
-        logger.debug(f"query took {time.time() - start} seconds")
+        logger.debug(f"Query took {round((time.time() - start) * 10**3)} ms")
