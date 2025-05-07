@@ -123,9 +123,11 @@ services:
     environment:
       MU_APPLICATION_FILE_STORAGE_PATH: "dataset-dumps/"
       MU_VIRTUOSO_ENDPOINT: "http://triplestore:8890/sparql"
-      UPDATE_DATASET_DUMP_CRON_PATTERN: "5 * * * *" # hourly
       # FIXME: always run in dev mode to circumvent memory limitations
       MODE: "development"
+      # Making dataset dumps takes a long time with the current sparql-implementation
+      # (2:45 for Marine Regions for example). Perform no more than once per 24h
+      UPDATE_DATASET_DUMP_CRON_PATTERN: "0 23 * * *"
     restart: always
     logging: *default-logging
   content-unification:
