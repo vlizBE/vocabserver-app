@@ -277,14 +277,11 @@ def update_ldes_dataset_dump():
 
 
 if UPDATE_DATASET_DUMP_CRON_PATTERN:
-    # work around running the cron job twice in flask dev mode
-    # context: https://stackoverflow.com/questions/25504149/why-does-running-the-flask-dev-server-run-itself-twice
-    from werkzeug.serving import is_running_from_reloader
-    if is_running_from_reloader():
-        scheduler = BackgroundScheduler()
-        logger.info(f"Configuring dataset dump update cron interval {UPDATE_DATASET_DUMP_CRON_PATTERN}")
-        scheduler.add_job(update_ldes_dataset_dump, CronTrigger.from_crontab(UPDATE_DATASET_DUMP_CRON_PATTERN))
-        scheduler.start()
+    scheduler = BackgroundScheduler()
+    logger.info(f"Configuring dataset dump update cron interval {UPDATE_DATASET_DUMP_CRON_PATTERN}")
+    scheduler.add_job(update_ldes_dataset_dump, CronTrigger.from_crontab(UPDATE_DATASET_DUMP_CRON_PATTERN))
+    logger.info(f"Starting Cron scheduler")
+    scheduler.start()
 
 @app.route("/delta", methods=["POST"])
 def process_delta():
