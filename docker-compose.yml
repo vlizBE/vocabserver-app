@@ -119,8 +119,9 @@ services:
       context: ./services/vocab-fetch
     image: ${REG_NS:-vocabserver_app}/vocab-fetch:${BUILD_TAG}
     volumes:
-      - ./data/vocab-fetch:/share
+      - ./data/files:/share
     environment:
+      MU_APPLICATION_FILE_STORAGE_PATH: "dataset-dumps/"
       MU_VIRTUOSO_ENDPOINT: "http://triplestore:8890/sparql"
       UPDATE_DATASET_DUMP_CRON_PATTERN: "5 * * * *" # hourly
       # FIXME: always run in dev mode to circumvent memory limitations
@@ -132,8 +133,9 @@ services:
       context: ./services/content-unification
     image: ${REG_NS:-vocabserver_app}/content-unification:${BUILD_TAG:-latest}
     volumes:
-      - ./data/vocab-fetch:/share
+      - ./data/files:/share
     environment:
+      MU_APPLICATION_FILE_STORAGE_PATH: "dataset-dumps/"
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
