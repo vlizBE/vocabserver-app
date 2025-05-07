@@ -267,6 +267,8 @@ def update_ldes_dataset_dump():
     datasets = query_outdated_dump_ldes_datasets()
     if datasets:
         logger.info("LDES datasets needing dump update: " + str(datasets))
+    else:
+        logger.info("No LDES datasets requiring a dump update found.")
     for dataset in datasets:
         logger.info(f"Creating dump task for dataset {dataset}")
         qs = create_download_task(dataset, TASKS_GRAPH)
