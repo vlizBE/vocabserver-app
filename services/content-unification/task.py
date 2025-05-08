@@ -247,7 +247,8 @@ def run_tasks(task_uris, graph, runner_func, sparql_query, sparql_update):
         sparql_update(update_tasks_status(task_uris, STATUS_SUCCESS, graph))
         return generated
     except Exception as e:
-        traceback.print_exc()
+        logger.warn(f"Failed running task {task_uri}")
+        logger.warn(traceback.format_exc())
         sparql_update(update_tasks_status(task_uris, STATUS_FAILED, graph))
 
     # end_time = time.time()
