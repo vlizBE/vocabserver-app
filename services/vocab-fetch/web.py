@@ -11,7 +11,7 @@ from helpers import query, update
 from sudo_query import query_sudo, update_sudo
 
 from rdflib import Graph, URIRef, Literal
-from rdflib.void import generateVoID
+from void import generateVoID, deleteVoID
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -182,41 +182,17 @@ def run_dataset_download_route(task_uuid: str):
     return ""
 
 
-def remove_old_metadata_from_graph(g, graph_name):
-    for s, p, _ in g.triples((None, None, None)):
-        if p == URIRef('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'):
-            continue
-        deletequery = "\n".join(
-            [f"PREFIX {prefix}: {ns.n3()}" for prefix, ns in g.namespaces()]
-        )
-        deletequery += (
-            f"\nDELETE WHERE {{\n\tGRAPH {sparql_escape_uri(graph_name)} {{\n"
-        )
-        deletequery += f" \t\t{s.n3()} {p.n3()} ?o ."
-        deletequery += f" \n\t }}\n}}\n"
-        update_sudo(deletequery)
-
 
 def generate_dataset_structural_metadata(dataset_uri, should_return_vocab):
     dataset_res = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))["results"][
         "bindings"
     ][0]
-    if "data_dump" in dataset_res.keys():
-        dataset_contents_g = load_vocab_file(
-            dataset_res["data_dump"]["value"], FILES_GRAPH
-        )
-    else:
-        dataset_contents_g = load_vocab_graph(dataset_res["dataset_graph"]["value"])
-    dataset_meta_g, dataset = generateVoID(
-        dataset_contents_g, dataset=URIRef(dataset_uri)
-    )
     # We update dataset metadata by purging old and re-loadind new data (instead of applying the diff)
     # This has some unexpected consequences, since ldes consumer-manager triggers on addition and
     # removal of void:Datasets. Since our actual intention isn't to remove the whole object (including type), but
     # rather to update more detailed properties, we exclude the `rdf:type` predicate from the removal process.
-    remove_old_metadata_from_graph(dataset_meta_g, VOID_DATASET_GRAPH)
-    for query_string in serialize_graph_to_sparql(dataset_meta_g, VOID_DATASET_GRAPH):
-        update_sudo(query_string)
+    deleteVoID(dataset_uri, VOID_DATASET_GRAPH)
+    generateVoID(dataset_res["dataset_graph"]["value"], dataset_uri, VOID_DATASET_GRAPH)
     if should_return_vocab:
       return dataset_res["vocab"]["value"]
     else:
@@ -291,6 +267,8 @@ def update_ldes_dataset_dump():
     datasets = query_outdated_dump_ldes_datasets()
     if datasets:
         logger.info("LDES datasets needing dump update: " + str(datasets))
+    else:
+        logger.info("No LDES datasets requiring a dump update found.")
     for dataset in datasets:
         logger.info(f"Creating dump task for dataset {dataset}")
         qs = create_download_task(dataset, TASKS_GRAPH)
@@ -299,14 +277,11 @@ def update_ldes_dataset_dump():
 
 
 if UPDATE_DATASET_DUMP_CRON_PATTERN:
-    # work around running the cron job twice in flask dev mode
-    # context: https://stackoverflow.com/questions/25504149/why-does-running-the-flask-dev-server-run-itself-twice
-    from werkzeug.serving import is_running_from_reloader
-    if is_running_from_reloader():
-        scheduler = BackgroundScheduler()
-        logger.info(f"Configuring dataset dump update cron interval {UPDATE_DATASET_DUMP_CRON_PATTERN}")
-        scheduler.add_job(update_ldes_dataset_dump, CronTrigger.from_crontab(UPDATE_DATASET_DUMP_CRON_PATTERN))
-        scheduler.start()
+    scheduler = BackgroundScheduler()
+    logger.info(f"Configuring dataset dump update cron interval {UPDATE_DATASET_DUMP_CRON_PATTERN}")
+    scheduler.add_job(update_ldes_dataset_dump, CronTrigger.from_crontab(UPDATE_DATASET_DUMP_CRON_PATTERN))
+    logger.info(f"Starting Cron scheduler")
+    scheduler.start()
 
 @app.route("/delta", methods=["POST"])
 def process_delta():

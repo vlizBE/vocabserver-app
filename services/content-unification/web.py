@@ -178,25 +178,19 @@ def run_scheduled_tasks():
             else:
                 logger.debug("No more tasks found")
                 return
-            try:
-                inputs_res =  query_sudo(get_input_contents_task(task_uri, TASKS_GRAPH))
-                inputs = binding_results(inputs_res, "content")
-                similar_tasks_res = query_sudo(find_same_scheduled_tasks(task_operation, inputs,  TASKS_GRAPH))
-                similar_tasks = binding_results(similar_tasks_res, "uri")
-                if task_operation == CONT_UN_OPERATION:
-                    logger.debug(f"Running task {task_uri}, operation {task_operation}")
-                    logger.debug(f"Updating at the same time: {' | '.join(similar_tasks)}")
-                    run_tasks(
-                        similar_tasks,
-                        TASKS_GRAPH,
-                        lambda sources: [run_vocab_unification(sources[0])],
-                        query_sudo,
-                        update_sudo,
-                    )
-
-            finally:
-                logger.warn(
-                    f"Problem while running task {task_uri}, operation {task_operation}"
+            inputs_res =  query_sudo(get_input_contents_task(task_uri, TASKS_GRAPH))
+            inputs = binding_results(inputs_res, "content")
+            similar_tasks_res = query_sudo(find_same_scheduled_tasks(task_operation, inputs,  TASKS_GRAPH))
+            similar_tasks = binding_results(similar_tasks_res, "uri")
+            if task_operation == CONT_UN_OPERATION:
+                logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                logger.debug(f"Updating at the same time: {' | '.join(similar_tasks)}")
+                run_tasks(
+                    similar_tasks,
+                    TASKS_GRAPH,
+                    lambda sources: [run_vocab_unification(sources[0])],
+                    query_sudo,
+                    update_sudo,
                 )
     finally:
         running_tasks_lock.release()

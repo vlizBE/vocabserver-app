@@ -63,8 +63,10 @@ def graph_to_file(graph_name, graph):
     headers = {"Accept": mime_type}
 
     i = 0
+    logger.info(f"Starting graph {graph_name} dump to {shared_uri_to_path(file_resource_uri)}.")
     with open(shared_uri_to_path(file_resource_uri), "wb") as f:
         while True:
+            logger.debug(f"Writing triplestore graph to file. Batch {i+1}")
             query_string = dump_graph_query_template.substitute(
                 graph=sparql_escape_uri(graph_name),
                 offset=i*BATCH_SIZE,
