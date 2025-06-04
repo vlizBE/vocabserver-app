@@ -135,7 +135,7 @@ services:
     volumes:
       - ./data/files:/share
     environment:
-      LOG_SPARQL_ALL: "true"
+      MU_APPLICATION_FILE_STORAGE_PATH: "dataset-dumps/"
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
