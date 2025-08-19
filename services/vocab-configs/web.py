@@ -5,8 +5,8 @@ import threading
 
 import requests
 from escape_helpers import sparql_escape, sparql_escape_uri
-from flask import request
-from helpers import generate_uuid, logger
+from flask import request, jsonify
+from helpers import generate_uuid, logger, app
 from helpers import query, update
 from sudo_query import query_sudo, update_sudo
 
@@ -19,6 +19,7 @@ from vocabularies import (
     matching_uris_in_graph,
     datasets_of_vocab,
     vocab_uris_from_graph,
+    get_vocabulary_by_alias,
 )
 
 from rdflib import Graph, URIRef, Literal
@@ -209,3 +210,67 @@ def process_delta():
     thread.start()
 
     return "", 200
+
+
+@app.route("/vocabularies-by-alias", methods=["GET"])
+def get_vocabularies_by_alias():
+    """
+    Endpoint to lookup vocabularies by alias
+    Supports query parameter 'alias' for exact alias matching
+    Also supports the filter format: filter[:or:][:exact:alias]=<alias_value>
+    Returns JSON in mu-cl-resources format
+    """
+    # Try to get alias from different parameter formats
+    alias = request.args.get('alias')
+    
+    # Check for filter format: filter[:or:][:exact:alias]
+    if not alias:
+        filter_param = request.args.get('filter[:or:][:exact:alias]')
+        if filter_param:
+            alias = filter_param
+    
+    if not alias:
+        return jsonify({
+            "error": {
+                "code": 400,
+                "message": "Missing required parameter 'alias' or 'filter[:or:][:exact:alias]'"
+            }
+        }), 400
+    
+    try:
+        query_string = get_vocabulary_by_alias(alias)
+        result = query_sudo(query_string)
+        
+        vocabularies = []
+        for binding in result.get("results", {}).get("bindings", []):
+            vocab_data = {
+                "type": "vocabulary",
+                "id": binding["uuid"]["value"],
+                "attributes": {
+                    "name": binding["name"]["value"],
+                    "alias": binding["alias"]["value"]
+                },
+                "links": {
+                    "self": f"/vocabularies/{binding['uuid']['value']}"
+                }
+            }
+            if "uri" in binding:
+                vocab_data["attributes"]["uri"] = binding["uri"]["value"]
+            
+            vocabularies.append(vocab_data)
+        
+        return jsonify({
+            "data": vocabularies,
+            "links": {
+                "self": request.url
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error looking up vocabulary by alias '{alias}': {str(e)}")
+        return jsonify({
+            "error": {
+                "code": 500,
+                "message": "Internal server error while looking up vocabulary"
+            }
+        }), 500

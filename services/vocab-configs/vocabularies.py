@@ -337,3 +337,31 @@ def replace_with_uniq_uuid(uri, new_uri, new_uuid, graph):
         new_uuid=sparql_escape_string(new_uuid),
     )
     return replace_query
+
+
+def get_vocabulary_by_alias(alias, graph=DATA_GRAPH):
+    """
+    Query to find vocabulary by alias and return in mu-cl-resources format
+    """
+    query_template = Template("""
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?uri ?uuid ?name ?alias
+WHERE {
+    GRAPH $graph {
+        ?uri a ext:VocabularyMeta ;
+             mu:uuid ?uuid ;
+             rdfs:label ?name ;
+             dbo:alias ?alias .
+        FILTER (?alias = $alias_filter)
+    }
+}
+""")
+    query = query_template.substitute(
+        graph=sparql_escape_uri(graph),
+        alias_filter=sparql_escape_string(alias)
+    )
+    return query

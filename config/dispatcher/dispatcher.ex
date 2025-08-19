@@ -44,6 +44,11 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/dataset-types/"
   end
 
+  # Route for vocabulary alias lookups - forward to vocab-configs service
+  match "/vocabularies-by-alias", @json do
+    forward conn, [], "http://vocab-configs/vocabularies-by-alias"
+  end
+
   match "/vocabularies/*path", @json do
     forward conn, path, "http://resource/vocabularies/"
   end
