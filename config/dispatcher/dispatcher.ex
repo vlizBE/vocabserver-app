@@ -44,7 +44,23 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/dataset-types/"
   end
 
-  # Route for vocabulary alias lookups - forward to vocab-configs service
+  # Route for vocabulary alias lookups using original URL pattern
+  get "/vocabularies", @json do
+    case conn.query_string do
+      query_string when is_binary(query_string) ->
+        if String.contains?(query_string, "filter") and String.contains?(query_string, "alias") do
+          # This is an alias lookup request - forward to vocab-configs service
+          forward conn, [], "http://vocab-configs/vocabularies-by-alias?" <> query_string
+        else
+          # Regular vocabulary request - forward to resource service
+          forward conn, [], "http://resource/vocabularies/"
+        end
+      _ ->
+        forward conn, [], "http://resource/vocabularies/"
+    end
+  end
+
+  # Route for vocabulary alias lookups - alternative endpoint
   match "/vocabularies-by-alias", @json do
     forward conn, [], "http://vocab-configs/vocabularies-by-alias"
   end
