@@ -1,12 +1,13 @@
 name: Docker Images Build & Push to ghrc.io
 
 on:
+  workflow_dispatch:
   push:
     branches: ["main"]
     tags: ["v*.*.*"]
   pull_request:
     branches: ["main"]
-
+  
 jobs:
   build:
     runs-on: ubuntu-latest
