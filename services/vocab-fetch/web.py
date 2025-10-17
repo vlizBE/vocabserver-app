@@ -21,8 +21,17 @@ from file import construct_get_file_query, construct_insert_file_query
 from task import find_actionable_task_of_type, run_task, find_actionable_task, create_download_task
 from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
 from ldes_dump import query_outdated_dump_ldes_datasets
-from sparql_util import binding_results, serialize_graph_to_sparql, graph_to_file
+from sparql_util import binding_results, serialize_graph_to_sparql, graph_to_file, MU_VIRTUOSO_ENDPOINT
 from format_to_mime import FORMAT_TO_MIME_EXT
+
+def drop_graph_virtuoso(graph_uri):
+    """Drop graph using direct virtuoso endpoint"""
+    import requests
+    query = f"DROP SILENT GRAPH {sparql_escape_uri(graph_uri)}"
+    logger.debug(f"Dropping graph via virtuoso: {query}")
+    response = requests.post(MU_VIRTUOSO_ENDPOINT, data={'update': query})
+    response.raise_for_status()
+    return response
 
 # Maybe make these configurable
 TASKS_GRAPH = "http://mu.semte.ch/graphs/public"
@@ -190,11 +199,13 @@ def generate_dataset_structural_metadata(dataset_uri, should_return_vocab):
             "bindings"
         ][0]
 
+        dataset_type = dataset_res.get("type", {}).get("value")
         dataset_graph = dataset_res.get("dataset_graph", {}).get("value")
-        if not dataset_graph:
-            raise ValueError(f"No dataset_graph found for dataset {dataset_uri}")
+        data_dump = dataset_res.get("data_dump", {}).get("value")
 
+        logger.info(f"Dataset type: {dataset_type}")
         logger.info(f"Dataset graph: {dataset_graph}")
+        logger.info(f"Data dump: {data_dump}")
 
         # We update dataset metadata by purging old and re-loadind new data (instead of applying the diff)
         # This has some unexpected consequences, since ldes consumer-manager triggers on addition and
@@ -203,8 +214,41 @@ def generate_dataset_structural_metadata(dataset_uri, should_return_vocab):
         logger.info("Deleting existing VoID metadata")
         deleteVoID(dataset_uri, VOID_DATASET_GRAPH)
 
-        logger.info("Generating new VoID metadata")
-        generateVoID(dataset_graph, dataset_uri, VOID_DATASET_GRAPH)
+        if data_dump:
+            # File-based dataset: load file into temporary graph for analysis
+            temp_graph_uri = f"http://temp.vocabsearch.com/graph/{generate_uuid()}"
+            logger.info(f"Processing file-based dataset with data dump: {data_dump}")
+            logger.info(f"Loading into temporary graph: {temp_graph_uri}")
+
+            try:
+                # Load file content into temporary graph in triplestore
+                file_graph = load_vocab_file(data_dump, FILES_GRAPH)
+                logger.info(f"Loaded {len(file_graph)} triples from file")
+
+                # Serialize to temporary graph in triplestore
+                for query_string in serialize_graph_to_sparql(file_graph, temp_graph_uri):
+                    update_sudo(query_string)
+
+                logger.info("File data loaded into temporary graph, generating VoID metadata")
+                # Generate VoID from temporary graph
+                generateVoID(temp_graph_uri, dataset_uri, VOID_DATASET_GRAPH)
+
+            finally:
+                # Clean up temporary graph (unification will reload from file when needed)
+                try:
+                    drop_graph_virtuoso(temp_graph_uri)
+                    logger.info(f"Cleaned up temporary graph: {temp_graph_uri}")
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to cleanup temporary graph {temp_graph_uri}: {cleanup_error}")
+
+        elif dataset_graph:
+            # Graph-based dataset (including LDES)
+            logger.info(f"Processing graph-based dataset with graph: {dataset_graph}")
+            generateVoID(dataset_graph, dataset_uri, VOID_DATASET_GRAPH)
+
+        else:
+            # Neither graph nor file dump available
+            raise ValueError(f"Dataset {dataset_uri} has neither dataset_graph nor data_dump. Cannot generate metadata.")
 
         if should_return_vocab:
             vocab_uri = dataset_res.get("vocab", {}).get("value")
