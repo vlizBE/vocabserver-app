@@ -184,19 +184,39 @@ def run_dataset_download_route(task_uuid: str):
 
 
 def generate_dataset_structural_metadata(dataset_uri, should_return_vocab):
-    dataset_res = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))["results"][
-        "bindings"
-    ][0]
-    # We update dataset metadata by purging old and re-loadind new data (instead of applying the diff)
-    # This has some unexpected consequences, since ldes consumer-manager triggers on addition and
-    # removal of void:Datasets. Since our actual intention isn't to remove the whole object (including type), but
-    # rather to update more detailed properties, we exclude the `rdf:type` predicate from the removal process.
-    deleteVoID(dataset_uri, VOID_DATASET_GRAPH)
-    generateVoID(dataset_res["dataset_graph"]["value"], dataset_uri, VOID_DATASET_GRAPH)
-    if should_return_vocab:
-      return dataset_res["vocab"]["value"]
-    else:
-      return dataset_uri    
+    try:
+        logger.info(f"Starting metadata generation for dataset: {dataset_uri}")
+        dataset_res = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))["results"][
+            "bindings"
+        ][0]
+
+        dataset_graph = dataset_res.get("dataset_graph", {}).get("value")
+        if not dataset_graph:
+            raise ValueError(f"No dataset_graph found for dataset {dataset_uri}")
+
+        logger.info(f"Dataset graph: {dataset_graph}")
+
+        # We update dataset metadata by purging old and re-loadind new data (instead of applying the diff)
+        # This has some unexpected consequences, since ldes consumer-manager triggers on addition and
+        # removal of void:Datasets. Since our actual intention isn't to remove the whole object (including type), but
+        # rather to update more detailed properties, we exclude the `rdf:type` predicate from the removal process.
+        logger.info("Deleting existing VoID metadata")
+        deleteVoID(dataset_uri, VOID_DATASET_GRAPH)
+
+        logger.info("Generating new VoID metadata")
+        generateVoID(dataset_graph, dataset_uri, VOID_DATASET_GRAPH)
+
+        if should_return_vocab:
+            vocab_uri = dataset_res.get("vocab", {}).get("value")
+            logger.info(f"Returning vocab URI: {vocab_uri}")
+            return vocab_uri
+        else:
+            logger.info(f"Returning dataset URI: {dataset_uri}")
+            return dataset_uri
+    except Exception as e:
+        logger.error(f"Error in generate_dataset_structural_metadata for {dataset_uri}: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        raise
 
 
 VOCAB_DOWNLOAD_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabDownloadJob"
@@ -300,4 +320,3 @@ def process_delta():
     thread.start()
 
     return "", 200
-
