@@ -10,8 +10,9 @@ PREFIX void: <http://rdfs.org/ns/void#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 PREFIX dc: <http://purl.org/dc/terms/>
+PREFIX dct: <http://purl.org/dc/terms/>
 
-SELECT DISTINCT ?format ?download_url ?data_dump ?type ?dataset_graph ?vocab
+SELECT DISTINCT ?format ?download_url ?data_dump ?type ?dataset_graph ?vocab ?creation_date
 WHERE {
     GRAPH $graph {
         $dataset
@@ -20,10 +21,14 @@ WHERE {
             dc:type ?type .
         ?vocab ext:sourceDataset $dataset.
         OPTIONAL { $dataset void:feature ?format . }
-        OPTIONAL { $dataset void:dataDump ?data_dump . }
+        OPTIONAL {
+            $dataset void:dataDump ?data_dump .
+            ?data_dump dct:created ?creation_date .
+        }
         OPTIONAL { $dataset ext:datasetGraph ?dataset_graph . }
     }
-}""")
+}
+ORDER BY DESC(?creation_date)""")
     query_string = query_template.substitute(
         graph=sparql_escape_uri(graph) if graph else "?g",
         dataset=sparql_escape_uri(dataset),

@@ -21,7 +21,12 @@ def query_sudo(the_query):
     the results in the given returnFormat (JSON by default)."""
     logger.debug("execute query: \n" + the_query)
     sparqlQuery.setQuery(the_query)
-    return sparqlQuery.query().convert()
+    try:
+        return sparqlQuery.query().convert()
+    except Exception as e:
+        logger.error("Query failed: \n" + the_query)
+        logger.error(f"Query error: {str(e)}")
+        raise
 
 
 def update_sudo(the_query, attempt=0, max_retries=5):
@@ -38,7 +43,8 @@ def update_sudo(the_query, attempt=0, max_retries=5):
 
             logger.debug(f"query took {time.time() - start} seconds")
         except Exception as e:
-            logger.warn("Executing query failed unexpectedly. Stacktrace:", e)
+            logger.error("Update query failed: \n" + the_query)
+            logger.error(f"Update query error: {str(e)}")
             if attempt <= max_retries:
                 wait_time = 0.6 * attempt + 30
                 logger.warn(f"Retrying after {wait_time} seconds [{attempt}/{max_retries}]")
@@ -46,7 +52,8 @@ def update_sudo(the_query, attempt=0, max_retries=5):
 
                 update_sudo(the_query, attempt + 1, max_retries)
             else:
-                logger.warn("Max attempts reached for query. Skipping.")
+                logger.error("Max attempts reached for query. Skipping.")
+                raise e
 
 
 def auth_update_sudo(the_query):
@@ -57,7 +64,11 @@ def auth_update_sudo(the_query):
         start = time.time()
         logger.debug(f"started query at {datetime.datetime.now()}")
         logger.debug("execute query: \n" + the_query)
-
-        authSparqlUpdate.query()
-
-        logger.debug(f"query took {time.time() - start} seconds")
+        try:
+            start = time.time()
+            authSparqlUpdate.query()
+            logger.debug(f"query took {time.time() - start} seconds")
+        except Exception as e:
+            logger.error("Auth update query failed: \n" + the_query)
+            logger.error(f"Auth update query error: {str(e)}")
+            raise

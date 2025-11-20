@@ -5,7 +5,7 @@ x-logging: &default-logging
     max-file: "3"
 services:
   frontend:
-    image: ghcr.io/vlizbe/vocabserver-frontend:${BUILD_TAG}
+    image: ghcr.io/vlizbe/vocabserver-frontend:${BUILD_TAG:-latest}
     restart: always
     logging: *default-logging
   identifier:
@@ -117,7 +117,7 @@ services:
   vocab-fetch:
     build:
       context: ./services/vocab-fetch
-    image: ${REG_NS:-vocabserver_app}/vocab-fetch:${BUILD_TAG}
+    image: ${REG_NS:-vocabserver_app}/vocab-fetch:${BUILD_TAG:-latest}
     volumes:
       - ./data/files:/share
     environment:
