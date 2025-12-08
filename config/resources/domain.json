@@ -16,6 +16,10 @@
         "alias": {
           "type": "string",
           "predicate": "dbpedia:alias"
+        },
+        "deleting": {
+          "type": "boolean",
+          "predicate": "ext:deleting"
         }
       },
       "relationships": {
