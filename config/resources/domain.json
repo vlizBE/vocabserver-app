@@ -2,7 +2,8 @@
   "version": "0.1",
   "prefixes": {
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-    "ext": "http://mu.semte.ch/vocabularies/ext/"
+    "ext": "http://mu.semte.ch/vocabularies/ext/",
+    "task": "http://redpencil.data.gift/vocabularies/tasks/"
   },
   "resources": {
     "vocabularies": {
@@ -16,10 +17,6 @@
         "alias": {
           "type": "string",
           "predicate": "dbpedia:alias"
-        },
-        "deleting": {
-          "type": "boolean",
-          "predicate": "ext:deleting"
         }
       },
       "relationships": {
@@ -32,6 +29,12 @@
           "predicate": "ext:mappingShape",
           "target": "shacl-node-shape",
           "cardinality": "one"
+        },
+        "data-containers": {
+          "predicate": "ext:content",
+          "inverse": true,
+          "target": "data-container",
+          "cardinality": "many"
         }
       },
       "features": ["include-uri"],

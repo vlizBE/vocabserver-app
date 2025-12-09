@@ -36,8 +36,7 @@ from unification import (
 from remove_vocab import (
     VOCAB_DELETE_OPERATION,
     start_vocab_delete_task,
-    run_vocab_delete_operation,
-    mark_vocab_deleting
+    run_vocab_delete_operation
 )
 
 # Maybe make these configurable
@@ -132,9 +131,7 @@ def delete_vocabulary(vocab_uuid: str):
     task_uuid = generate_uuid()
     logger.info(f"Deleting vocab {vocab_uuid}, task id: {task_uuid}")
     vocab_iri = query_sudo(vocabulary_uri(vocab_uuid, DATA_GRAPH))["results"]["bindings"][0]["vocabulary"]["value"]
-    # vocab_iri = vocab_uuid
     update_sudo(start_vocab_delete_task(vocab_iri, task_uuid, TASKS_GRAPH))
-    update_sudo(mark_vocab_deleting(vocab_uuid, DATA_GRAPH))
 
     return {
         'meta': { 'task_id': task_uuid }
