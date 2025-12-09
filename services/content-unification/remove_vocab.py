@@ -30,29 +30,6 @@ TASK_URI_PREFIX = "http://redpencil.data.gift/id/task/"
 VOCAB_DELETE_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabDeleteJob"
 VOCAB_GRAPH = "http://mu.semte.ch/graphs/public"
 
-def mark_vocab_deleting(vocab_uuid, graph=DATA_GRAPH):
-    query_template = Template("""
-        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-
-        WITH $graph
-        DELETE {
-            ?vocab ext:deleting ?any .
-        } INSERT {
-            ?vocab ext:deleting true .
-        } WHERE {
-            ?vocab a ext:VocabularyMeta ;
-                   mu:uuid $vocab_uuid .
-        }
-    """)
-
-    query_string = query_template.substitute(
-        graph=sparql_escape_uri(graph),
-        vocab_uuid=sparql_escape_string(vocab_uuid)
-    )
-
-    return query_string
-
 def start_vocab_delete_task(vocab_iri, task_uuid, graph=MU_APPLICATION_GRAPH):
     query_template = Template("""
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
