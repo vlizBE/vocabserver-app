@@ -147,14 +147,15 @@ PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 SELECT DISTINCT (?concept AS ?s) (?conceptPred AS ?p) (?conceptObj AS ?o)
 WHERE {
     GRAPH $graph {
-        VALUES ?vocabMeta { $vocab }
-        ?vocabMeta a ext:VocabularyMeta .
-        ?vocabMeta ext:sourceDataset ?sourceDataset .
-        ?concept dct:source ?sourceDataset .
+        { SELECT ?concept {
+            VALUES ?vocabMeta { $vocab }
+            ?vocabMeta a ext:VocabularyMeta .
+            ?vocabMeta ext:sourceDataset ?sourceDataset .
+            ?concept dct:source ?sourceDataset .
+        } LIMIT 10 }
         ?concept ?conceptPred ?conceptObj .
     }
 }
-LIMIT 10
 """)
     query_string = query_template.substitute(
         graph=sparql_escape_uri(graph),
