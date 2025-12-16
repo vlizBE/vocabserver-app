@@ -26,8 +26,10 @@ STATUS_FAILED = "http://redpencil.data.gift/id/concept/JobStatus/failed"
 CONTAINER_URI_PREFIX = "http://redpencil.data.gift/id/container/"
 JOB_URI_PREFIX = "http://redpencil.data.gift/id/job/"
 TASK_URI_PREFIX = "http://redpencil.data.gift/id/task/"
+TASKS_GRAPH = "http://mu.semte.ch/graphs/public"
 
 VOCAB_DELETE_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabDeleteJob"
+VOCAB_DELETE_WAIT_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabDeleteWaitJob"
 VOCAB_GRAPH = "http://mu.semte.ch/graphs/public"
 
 def start_vocab_delete_task(vocab_iri, task_uuid, graph=MU_APPLICATION_GRAPH):
@@ -106,7 +108,9 @@ def run_vocab_delete_operation(vocab_uri):
     update_sudo(remove_vocab_partitions(vocab_uri, VOCAB_GRAPH))
     update_sudo(remove_vocab_source_datasets(vocab_uri, VOCAB_GRAPH))
     update_sudo(remove_vocab_mapping_shape(vocab_uri, VOCAB_GRAPH))
-    update_sudo(remove_vocab_meta(vocab_uri, VOCAB_GRAPH))
+
+    update_sudo(start_vocab_delete_wait_task(vocab_uri, TASKS_GRAPH))
+    return vocab_uri
 
 def remove_files(vocab_uri: str, graph: str):
     response = query_sudo(find_file_paths(vocab_uri, graph))
@@ -349,3 +353,91 @@ WHERE {
         vocab=sparql_escape_uri(vocab_uri),
     )
     return query_string
+
+def start_vocab_delete_wait_task(vocab_iri, graph=MU_APPLICATION_GRAPH):
+    query_template = Template("""
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    INSERT {
+      GRAPH $graph {
+        $task_uri a task:Task ;
+            mu:uuid $task_uuid ;
+            dct:created $created ;
+            dct:modified $created ;
+            task:index "1";
+            dct:isPartOf ?job ;
+            task:inputContainer ?container ;
+            task:operation <http://mu.semte.ch/vocabularies/ext/VocabDeleteWaitJob> ;
+            adms:status <http://redpencil.data.gift/id/concept/JobStatus/scheduled> .
+      }
+    } WHERE {
+        ?container a nfo:DataContainer ;
+            ext:content $vocab_iri .
+
+        ?prev_task a task:Task ;
+            task:inputContainer ?container ;
+            task:operation <http://mu.semte.ch/vocabularies/ext/VocabDeleteJob> ;
+            dct:isPartOf ?job .
+
+        ?job a cogs:Job ;
+          task:operation <http://lblod.data.gift/id/jobs/concept/JobOperation/vocab-delete> .
+    }
+                              """)
+
+    task_uuid = generate_uuid()
+    task_uri = TASK_URI_PREFIX + task_uuid
+    created = datetime.datetime.now()
+    query_string = query_template.substitute(
+        graph=sparql_escape_uri(graph),
+        task_uri=sparql_escape_uri(task_uri),
+        task_uuid=sparql_escape_string(task_uuid),
+        created=sparql_escape_datetime(created),
+        vocab_iri=sparql_escape_uri(vocab_iri)
+    )
+
+    return query_string
+
+def run_vocab_delete_wait_operation(vocab_uri):
+    import time
+
+    tries = 0
+
+    while True:
+        if (tries <= 3):
+            time.sleep(10)
+        else:
+            time.sleep(60)
+
+        tries += 1
+
+        count = count_concepts_in_search(vocab_uri)
+        if count > 0:
+            logger.info(f"Vocab still has {count} concepts in search: {vocab_uri}")
+            continue
+        else:
+            break
+
+    logger.info(f"Vocab removed from search in {tries} tries: {vocab_uri}")
+    update_sudo(remove_vocab_meta(vocab_uri, VOCAB_GRAPH))
+
+def count_concepts_in_search(vocab_uri):
+    import requests
+
+    headers = {"Accept": "application/vnd.api+json"}
+    url = "http://search/concepts/search"
+    params = {
+        'filter[vocabulary]': vocab_uri,
+        'page[size]': 1
+    }
+
+    with requests.get(url, headers=headers, params=params) as res:
+        assert res.ok
+        json = res.json()
+        count = json['count']
+        return count

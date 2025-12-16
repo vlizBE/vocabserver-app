@@ -35,8 +35,10 @@ from unification import (
 )
 from remove_vocab import (
     VOCAB_DELETE_OPERATION,
+    VOCAB_DELETE_WAIT_OPERATION,
     start_vocab_delete_task,
-    run_vocab_delete_operation
+    run_vocab_delete_operation,
+    run_vocab_delete_wait_operation
 )
 
 # Maybe make these configurable
@@ -151,7 +153,9 @@ def run_scheduled_tasks():
 
     try:
         while True:
-            task_q = find_actionable_task_of_type([CONT_UN_OPERATION, VOCAB_DELETE_OPERATION], TASKS_GRAPH)
+            task_q = find_actionable_task_of_type(
+                [CONT_UN_OPERATION, VOCAB_DELETE_OPERATION, VOCAB_DELETE_WAIT_OPERATION],
+                TASKS_GRAPH)
             task_res = query_sudo(task_q)
             if task_res["results"]["bindings"]:
                 (task_uri, task_operation) = binding_results(
@@ -181,6 +185,16 @@ def run_scheduled_tasks():
                     similar_tasks,
                     TASKS_GRAPH,
                     lambda sources: [run_vocab_delete_operation(sources[0])],
+                    query_sudo,
+                    update_sudo,
+                )
+            elif task_operation == VOCAB_DELETE_WAIT_OPERATION:
+                logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                logger.debug(f"Updating at the same time: {' | '.join(similar_tasks)}")
+                run_tasks(
+                    similar_tasks,
+                    TASKS_GRAPH,
+                    lambda sources: [run_vocab_delete_wait_operation(sources[0])],
                     query_sudo,
                     update_sudo,
                 )
