@@ -403,22 +403,36 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
     return query_string
 
+MAX_NO_PROGRESS = 5
+
 def run_vocab_delete_wait_operation(vocab_uri):
     import time
 
     tries = 0
 
+    previous_count = None
+    no_progress_count = 0
+
     while True:
-        if (tries <= 3):
-            time.sleep(10)
-        else:
-            time.sleep(60)
+
+        sleep_time = 10 if tries <= 3 else 60
+        time.sleep(sleep_time)
 
         tries += 1
-
         count = count_concepts_in_search(vocab_uri)
+
+        if previous_count is not None and count >= previous_count:
+            no_progress_count += 1
+            if no_progress_count >= MAX_NO_PROGRESS:
+                raise RuntimeError(
+                    f"Vocabulary deletion stuck at {count} concepts after {no_progress_count} checks with no progress: {vocab_uri}"
+                )
+        else:
+            no_progress_count = 0
+
         if count > 0:
             logger.info(f"Vocab still has {count} concepts in search: {vocab_uri}")
+            previous_count = count
             continue
         else:
             break
@@ -426,7 +440,7 @@ def run_vocab_delete_wait_operation(vocab_uri):
     logger.info(f"Vocab removed from search in {tries} tries: {vocab_uri}")
     update_sudo(remove_vocab_meta(vocab_uri, VOCAB_GRAPH))
 
-def count_concepts_in_search(vocab_uri):
+def count_concepts_in_search(vocab_uri) -> int:
     import requests
 
     headers = {"Accept": "application/vnd.api+json"}

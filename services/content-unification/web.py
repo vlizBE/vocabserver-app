@@ -191,14 +191,14 @@ def run_scheduled_tasks():
             elif task_operation == VOCAB_DELETE_WAIT_OPERATION:
                 logger.debug(f"Running task {task_uri}, operation {task_operation}")
                 logger.debug(f"Updating at the same time: {' | '.join(similar_tasks)}")
-                thread = threading.Thread(target=run_tasks, args=(
+                run_tasks(
                     similar_tasks,
                     TASKS_GRAPH,
                     lambda sources: [run_vocab_delete_wait_operation(sources[0])],
                     query_sudo,
                     update_sudo,
-                ))
-                thread.start()
+                    thread=True
+                )
     finally:
         running_tasks_lock.release()
 
