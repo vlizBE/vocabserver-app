@@ -18,11 +18,6 @@ from sparql_util import (
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 DATA_GRAPH = "http://mu.semte.ch/graphs/public"
 
-STATUS_BUSY = "http://redpencil.data.gift/id/concept/JobStatus/busy"
-STATUS_SCHEDULED = "http://redpencil.data.gift/id/concept/JobStatus/scheduled"
-STATUS_SUCCESS = "http://redpencil.data.gift/id/concept/JobStatus/success"
-STATUS_FAILED = "http://redpencil.data.gift/id/concept/JobStatus/failed"
-
 CONTAINER_URI_PREFIX = "http://redpencil.data.gift/id/container/"
 JOB_URI_PREFIX = "http://redpencil.data.gift/id/job/"
 TASK_URI_PREFIX = "http://redpencil.data.gift/id/task/"
