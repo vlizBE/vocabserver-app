@@ -128,9 +128,8 @@ PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 PREFIX void: <http://rdfs.org/ns/void#>
 
 SELECT ?dataSource WHERE {
-    VALUES ?vocabMeta { $vocab }
-    ?vocabMeta a ext:VocabularyMeta .
-    ?vocabMeta ext:sourceDataset ?sourceDataset .
+    $vocab a ext:VocabularyMeta ;
+        ext:sourceDataset ?sourceDataset .
     ?sourceDataset void:dataDump ?fileResource .
     ?fileResource ^nie:dataSource ?dataSource .
 }
@@ -152,9 +151,8 @@ SELECT DISTINCT (?concept AS ?s) (?conceptPred AS ?p) (?conceptObj AS ?o)
 WHERE {
     GRAPH $graph {
         { SELECT ?concept {
-            VALUES ?vocabMeta { $vocab }
-            ?vocabMeta a ext:VocabularyMeta .
-            ?vocabMeta ext:sourceDataset ?sourceDataset .
+            $vocab a ext:VocabularyMeta ;
+                ext:sourceDataset ?sourceDataset .
             ?concept dct:source ?sourceDataset .
         } LIMIT 10 }
         ?concept ?conceptPred ?conceptObj .
@@ -181,9 +179,8 @@ DELETE {
     ?sourceDataset void:dataDump ?dataDump .
 }
 WHERE {
-    VALUES ?vocab { $vocab }
-    ?vocab a ext:VocabularyMeta .
-    ?vocab ext:sourceDataset ?sourceDataset .
+    $vocab a ext:VocabularyMeta ;
+        ext:sourceDataset ?sourceDataset .
     ?sourceDataset void:dataDump ?dataDump .
     ?dataDump ?dataDumpPred ?dataDumpObj .
     ?dataSource nie:dataSource ?dataDump .
@@ -208,9 +205,8 @@ DELETE {
     ?sourceDataset ?sourceDatasetPred ?sourceDatasetObj .
 }
 WHERE {
-    VALUES ?vocab { $vocab }
-    ?vocab a ext:VocabularyMeta .
-    ?vocab ext:sourceDataset ?sourceDataset .
+    $vocab a ext:VocabularyMeta ;
+        ext:sourceDataset ?sourceDataset .
     ?sourceDataset ?sourceDatasetPred ?sourceDatasetObj.
 }
     """)
@@ -234,9 +230,8 @@ DELETE {
     ?job ?jobPred ?jobObj .
 }
 WHERE {
-    VALUES ?vocab { $vocab }
-    ?vocab a ext:VocabularyMeta .
-    ?vocab ext:sourceDataset ?sourceDataset .
+    $vocab a ext:VocabularyMeta ;
+        ext:sourceDataset ?sourceDataset .
     ?job prov:used ?sourceDataset .
 	?job a cogs:Job .
     ?job ?jobPred ?jobObj .
@@ -262,8 +257,7 @@ DELETE {
     ?job ?jobPred ?jobObj .
 }
 WHERE {
-    VALUES ?vocab { $vocab }
-    ?vocab a ext:VocabularyMeta .
+    $vocab a ext:VocabularyMeta .
     ?job prov:used ?vocab .
 	?job a cogs:Job .
     ?job ?jobPred ?jobObj .
@@ -283,12 +277,11 @@ PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 
 WITH $graph
 DELETE {
-    ?vocabMeta ?vocabMetaPred ?vocabMetaObj .
+    $vocab ?vocabMetaPred ?vocabMetaObj .
 }
 WHERE {
-    VALUES ?vocabMeta { $vocab }
-    ?vocabMeta a ext:VocabularyMeta .
-    ?vocabMeta ?vocabMetaPred ?vocabMetaObj .
+    $vocab a ext:VocabularyMeta ;
+        ?vocabMetaPred ?vocabMetaObj .
 }
     """)
     query_string = query_template.substitute(
@@ -310,9 +303,8 @@ DELETE {
     ?partition ?partitionPred ?partitionObj .
 }
 WHERE {
-    VALUES ?vocab { $vocab }
-    ?vocab a ext:VocabularyMeta .
-    ?vocab ext:sourceDataset ?sourceDataset .
+    $vocab a ext:VocabularyMeta ;
+        ext:sourceDataset ?sourceDataset .
     ?sourceDataset ?classPropPart ?partition .
     ?partition ?partitionPred ?partitionObj .
     VALUES ?classPropPart { void:classPartition void:propertyPartition }
