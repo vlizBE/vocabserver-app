@@ -109,6 +109,7 @@ def run_vocab_unification(vocab_uri):
                 ],
                 path_props["sourceClass"]["value"],
                 path_props["sourcePathString"]["value"],  # !
+                path_props.get("sourceFilter", {}).get("value") or '',
                 temp_named_graph,
                 VOCAB_GRAPH,
                 10,

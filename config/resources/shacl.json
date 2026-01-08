@@ -12,7 +12,11 @@
         "target-class": {
           "type": "url",
           "predicate": "sh:targetClass"
-        }
+        },
+        "filter": {
+          "type": "string",
+          "predicate": "ext:filter"
+        },
       },
       "relationships": {
         "property-shapes": {

@@ -9,14 +9,18 @@ def get_property_paths(node_shape, metadata_graph):
     query_template = Template("""
 PREFIX sh: <http://www.w3.org/ns/shacl#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-SELECT DISTINCT ?sourceClass ?sourcePathString ?destClass ?destPath
+SELECT DISTINCT ?sourceClass ?sourcePathString ?sourceFilter ?destClass ?destPath
 WHERE {
     GRAPH $metadata_graph {
         $node_shape
             a sh:NodeShape ;
             sh:targetClass ?sourceClass ;
             sh:property ?propertyShape .
+        OPTIONAL {
+            $node_shape ext:filter ?sourceFilter .
+        }
         ?propertyShape
             a sh:PropertyShape ;
             sh:description ?destPath ;
@@ -50,6 +54,7 @@ def get_ununified_batch(dest_class,
                         source_datasets,
                         source_class,
                         source_path_string,
+                        source_filter,
                         source_graph,
                         target_graph,
                         batch_size):
@@ -83,6 +88,8 @@ WHERE {
         ?sourceSubject
             a $source_class ;
             $source_path_string ?sourceValue .
+        BIND(?sourceSubject as ?entity)
+        $source_filter
     }
     BIND(IRI(CONCAT($new_subject_uri_base, MD5(CONCAT(str(?vocabUri), str(?sourceSubject))))) as ?internalSubject)
 }
@@ -97,7 +104,8 @@ LIMIT $batch_size
         source_graph=sparql_escape_uri(source_graph),
         target_graph=sparql_escape_uri(target_graph),
         batch_size=batch_size,
-        new_subject_uri_base=sparql_escape_string(NEW_SUBJECT_BASE)
+        new_subject_uri_base=sparql_escape_string(NEW_SUBJECT_BASE),
+        source_filter=source_filter
     )
     return query_string
 
