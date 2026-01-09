@@ -109,6 +109,26 @@ LIMIT $batch_size
     )
     return query_string
 
+def count_ununified(source_class, source_path_string, source_filter, source_graph):
+    query_template = Template("""
+SELECT (COUNT(DISTINCT ?entity) AS ?count) {
+    GRAPH $source_graph {
+        ?sourceSubject
+            a $source_class ;
+            $source_path_string ?sourceValue .
+        BIND(?sourceSubject as ?entity)
+        $source_filter
+    }
+}
+""")
+    query_string = query_template.substitute(
+        source_class=sparql_escape_uri(source_class),
+        source_path_string=sparql_escape_uri(source_path_string),
+        source_filter=source_filter,
+        source_graph=sparql_escape_uri(source_graph),
+    )
+    return query_string
+
 
 # delete the subjects provided that are part of a dataset
 # note that these are related to the subject uris in our internal app via prov:wasDerivedFrom,
