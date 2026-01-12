@@ -40,6 +40,7 @@ def copy_vocabs_configs_from_graph(graph_orig, graph_target=DATA_GRAPH):
                   mu:uuid ?msUuid ;
                   shacl:targetClass ?msTargetClass ;
                   shacl:property ?msPropertyShape .
+    ?mappingShape ext:filter ?msFilter .
     ?msPropertyShape a shacl:PropertyShape;
                    mu:uuid ?psUuid ;
                    shacl:path ?psPath;
@@ -67,7 +68,10 @@ def copy_vocabs_configs_from_graph(graph_orig, graph_target=DATA_GRAPH):
                 ?mappingShape a shacl:NodeShape ;
                     mu:uuid ?msUuid ;
                     shacl:targetClass ?msTargetClass .
-            } UNION {      
+                OPTIONAL {
+                    ?mappingShape ext:filter ?msFilter .
+                }
+            } UNION {
                 ?mappingShape shacl:property ?msPropertyShape .
                 ?msPropertyShape a shacl:PropertyShape;
                     mu:uuid ?psUuid ;
@@ -105,7 +109,8 @@ CONSTRUCT {
   ?mappingShape a shacl:NodeShape ;
                   mu:uuid ?msUuid;
                   shacl:targetClass ?msTargetClass ;
-                  shacl:property ?msPropertyShape .
+                  shacl:property ?msPropertyShape ;
+                  ext:filter ?msFilter .
   ?msPropertyShape a shacl:PropertyShape;
                    mu:uuid ?psUuid;
                    shacl:path ?psPath;
@@ -141,7 +146,10 @@ CONSTRUCT {
                 ?mappingShape a shacl:NodeShape ;
                     mu:uuid ?msUuid;
                     shacl:targetClass ?msTargetClass .
-            } UNION {      
+                OPTIONAL {
+                    ?mappingShape ext:filter ?msFilter .
+                }
+            } UNION {
                 ?mappingShape shacl:property ?msPropertyShape .
                 ?msPropertyShape a shacl:PropertyShape;
                     mu:uuid ?psUuid;

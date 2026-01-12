@@ -1,5 +1,6 @@
 import os
 from string import Template
+import re
 from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_escape_string
 
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
@@ -9,14 +10,18 @@ def get_property_paths(node_shape, metadata_graph):
     query_template = Template("""
 PREFIX sh: <http://www.w3.org/ns/shacl#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-SELECT DISTINCT ?sourceClass ?sourcePathString ?destClass ?destPath
+SELECT DISTINCT ?sourceClass ?sourcePathString ?sourceFilter ?destClass ?destPath
 WHERE {
     GRAPH $metadata_graph {
         $node_shape
             a sh:NodeShape ;
             sh:targetClass ?sourceClass ;
             sh:property ?propertyShape .
+        OPTIONAL {
+            $node_shape ext:filter ?sourceFilter .
+        }
         ?propertyShape
             a sh:PropertyShape ;
             sh:description ?destPath ;
@@ -45,15 +50,7 @@ WHERE {
 # A unified entity is connected to a vocab via one (or more) datasets, but in reality a unified entity
 # is part of a vocabulary (a vocab has one "unified dataset"), not part of "multiple" datasets. 
 # As long as a concept is connected to one dataset of the vocab, the search will find it back.
-def get_ununified_batch(dest_class,
-                        dest_predicate,
-                        source_datasets,
-                        source_class,
-                        source_path_string,
-                        source_graph,
-                        target_graph,
-                        batch_size):
-    query_template = Template("""
+UNUNIFIED_BATCH_TEMPLATE = Template("""
 PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
@@ -83,12 +80,24 @@ WHERE {
         ?sourceSubject
             a $source_class ;
             $source_path_string ?sourceValue .
+        BIND(?sourceSubject as ?entity)
+        $source_filter
     }
     BIND(IRI(CONCAT($new_subject_uri_base, MD5(CONCAT(str(?vocabUri), str(?sourceSubject))))) as ?internalSubject)
 }
 LIMIT $batch_size
 """)
-    query_string = query_template.substitute(
+
+def get_ununified_batch(dest_class,
+                        dest_predicate,
+                        source_datasets,
+                        source_class,
+                        source_path_string,
+                        source_filter,
+                        source_graph,
+                        target_graph,
+                        batch_size):
+    query_string = UNUNIFIED_BATCH_TEMPLATE.substitute(
         dest_class=sparql_escape_uri(dest_class),
         dest_predicate=sparql_escape_uri(dest_predicate),
         source_datasets="\n         ".join([sparql_escape_uri(source_dataset) for source_dataset in source_datasets]),
@@ -97,7 +106,31 @@ LIMIT $batch_size
         source_graph=sparql_escape_uri(source_graph),
         target_graph=sparql_escape_uri(target_graph),
         batch_size=batch_size,
-        new_subject_uri_base=sparql_escape_string(NEW_SUBJECT_BASE)
+        new_subject_uri_base=sparql_escape_string(NEW_SUBJECT_BASE),
+        source_filter=source_filter
+    )
+    return query_string
+
+UNUNIFIED_BATCH_TEMPLATE_VARS = set(re.compile(r'\?\w+').findall(UNUNIFIED_BATCH_TEMPLATE.template))
+UNUNIFIED_BATCH_TEMPLATE_VARS.remove("?entity")
+
+def count_ununified(source_class, source_path_string, source_filter, source_graph):
+    query_template = Template("""
+SELECT (COUNT(DISTINCT ?entity) AS ?count) {
+    GRAPH $source_graph {
+        ?sourceSubject
+            a $source_class ;
+            $source_path_string ?sourceValue .
+        BIND(?sourceSubject as ?entity)
+        $source_filter
+    }
+}
+""")
+    query_string = query_template.substitute(
+        source_class=sparql_escape_uri(source_class),
+        source_path_string=sparql_escape_uri(source_path_string),
+        source_filter=source_filter,
+        source_graph=sparql_escape_uri(source_graph),
     )
     return query_string
 

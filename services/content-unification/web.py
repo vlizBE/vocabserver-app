@@ -31,6 +31,7 @@ from dataset import get_dataset
 from unification import (
     get_property_paths,
     get_ununified_batch,
+    count_ununified,
     delete_dataset_subjects_from_graph,
 )
 from remove_vocab import (
@@ -53,19 +54,12 @@ TEMP_GRAPH_BASE = "http://example-resource.com/graph/"
 
 CONT_UN_OPERATION = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
 
-
-def run_vocab_unification(vocab_uri):
-    vocab_sources = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))["results"][
-        "bindings"
-    ]
-
-    if not vocab_sources:
-        raise Exception(f"Vocab {vocab_uri} does not have a mapping. Unification cancelled.")
-
+def build_temp_graph(datasets):
     temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
-    for vocab_source in vocab_sources:
+
+    for dataset in datasets:
         dataset_versions = query_sudo(
-            get_dataset(vocab_source["sourceDataset"]["value"], VOCAB_GRAPH)
+            get_dataset(dataset, VOCAB_GRAPH)
         )["results"]["bindings"]
         print(dataset_versions)
         # TODO: LDES check
@@ -93,6 +87,21 @@ def run_vocab_unification(vocab_uri):
             copy_graph_to_temp(
                 dataset_versions[0]["dataset_graph"]["value"], temp_named_graph
             )
+
+    return temp_named_graph
+
+def run_vocab_unification(vocab_uri):
+    vocab_sources = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))["results"][
+        "bindings"
+    ]
+
+    if not vocab_sources:
+        raise Exception(f"Vocab {vocab_uri} does not have a mapping. Unification cancelled.")
+
+    datasets = [vocab_source["sourceDataset"]["value"] for vocab_source in vocab_sources]
+
+    temp_named_graph = build_temp_graph(datasets)
+
     prop_paths_qs = get_property_paths(
         vocab_sources[0]["mappingShape"]["value"], VOCAB_GRAPH
     )
@@ -109,6 +118,7 @@ def run_vocab_unification(vocab_uri):
                 ],
                 path_props["sourceClass"]["value"],
                 path_props["sourcePathString"]["value"],  # !
+                path_props.get("sourceFilter", {}).get("value") or '',
                 temp_named_graph,
                 VOCAB_GRAPH,
                 10,
@@ -126,6 +136,48 @@ def run_vocab_unification(vocab_uri):
 
     drop_graph(temp_named_graph)
     return vocab_uri
+
+@app.route("/filter-count/")
+def filter_count():
+    dataset_uri = request.args['dataset_uri']
+    source_class = request.args['class']
+    source_path_string= request.args['source_path_string']
+    source_filter: str = request.args['filter']
+
+    from unification import UNUNIFIED_BATCH_TEMPLATE_VARS
+    shadowed_vars = [var for var in UNUNIFIED_BATCH_TEMPLATE_VARS if source_filter.find(var) != -1]
+
+    warning = None
+    if not shadowed_vars == []:
+        warning = f"Found vars in your filter that overlap with internally used vars. This could lead to unexpected behaviour: {', '.join(shadowed_vars)}"
+
+    temp_named_graph = build_temp_graph([dataset_uri])
+
+    from SPARQLWrapper.SPARQLExceptions import EndPointInternalError
+
+    count_query = count_ununified(
+            source_class, source_path_string, source_filter, temp_named_graph
+        )
+    try:
+        filter_res = query_sudo(count_query)
+    except (EndPointInternalError) as e:
+        return {
+            'meta': {
+                'error': str(e),
+                'query': count_query,
+                'valid': False,
+            }
+        }
+    finally:
+         drop_graph(temp_named_graph)
+
+    count = filter_res["results"]["bindings"][0]["count"]["value"]
+    count = int(count)
+
+
+    return {
+        'meta': { 'count': count, 'valid': True, 'warning': warning }
+    }
 
 
 @app.route("/delete-vocabulary/<vocab_uuid>", methods=("DELETE",))

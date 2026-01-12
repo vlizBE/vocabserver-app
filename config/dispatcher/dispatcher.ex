@@ -40,6 +40,10 @@ defmodule Dispatcher do
     forward conn, [], "http://content-unification/delete-vocabulary/" <> id
   end
 
+  match "/filter-count/*path", @json do
+    forward conn, path, "http://content-unification/filter-count/"
+  end
+
   match "/dataset-types/*path", @json do
     forward conn, path, "http://resource/dataset-types/"
   end
