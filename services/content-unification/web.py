@@ -155,14 +155,16 @@ def filter_count():
 
     from SPARQLWrapper.SPARQLExceptions import EndPointInternalError
 
-    try:
-        filter_res = query_sudo(count_ununified(
+    count_query = count_ununified(
             source_class, source_path_string, source_filter, temp_named_graph
-        ))
+        )
+    try:
+        filter_res = query_sudo(count_query)
     except (EndPointInternalError) as e:
         return {
             'meta': {
                 'error': str(e),
+                'query': count_query,
                 'valid': False,
             }
         }
