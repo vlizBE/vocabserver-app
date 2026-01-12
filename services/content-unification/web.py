@@ -142,11 +142,18 @@ def filter_count():
     dataset_uri = request.args['dataset_uri']
     source_class = request.args['class']
     source_path_string= request.args['source_path_string']
-    source_filter = request.args['filter']
+    source_filter: str = request.args['filter']
+
+    from unification import UNUNIFIED_BATCH_TEMPLATE_VARS
+    shadowed_vars = [var for var in UNUNIFIED_BATCH_TEMPLATE_VARS if source_filter.find(var) != -1]
+
+    warning = None
+    if not shadowed_vars == []:
+        warning = f"Found vars in your filter that match other vars in the query: {', '.join(shadowed_vars)}"
 
     temp_named_graph = build_temp_graph([dataset_uri])
 
-    from SPARQLWrapper.SPARQLExceptions import SPARQLWrapperException, EndPointInternalError
+    from SPARQLWrapper.SPARQLExceptions import EndPointInternalError
 
     try:
         filter_res = query_sudo(count_ununified(
@@ -167,7 +174,7 @@ def filter_count():
 
 
     return {
-        'meta': { 'count': count, 'valid': True }
+        'meta': { 'count': count, 'valid': True, 'warning': warning }
     }
 
 

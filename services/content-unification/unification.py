@@ -1,5 +1,6 @@
 import os
 from string import Template
+import re
 from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_escape_string
 
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
@@ -49,16 +50,7 @@ WHERE {
 # A unified entity is connected to a vocab via one (or more) datasets, but in reality a unified entity
 # is part of a vocabulary (a vocab has one "unified dataset"), not part of "multiple" datasets. 
 # As long as a concept is connected to one dataset of the vocab, the search will find it back.
-def get_ununified_batch(dest_class,
-                        dest_predicate,
-                        source_datasets,
-                        source_class,
-                        source_path_string,
-                        source_filter,
-                        source_graph,
-                        target_graph,
-                        batch_size):
-    query_template = Template("""
+UNUNIFIED_BATCH_TEMPLATE = Template("""
 PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
@@ -95,7 +87,17 @@ WHERE {
 }
 LIMIT $batch_size
 """)
-    query_string = query_template.substitute(
+
+def get_ununified_batch(dest_class,
+                        dest_predicate,
+                        source_datasets,
+                        source_class,
+                        source_path_string,
+                        source_filter,
+                        source_graph,
+                        target_graph,
+                        batch_size):
+    query_string = UNUNIFIED_BATCH_TEMPLATE.substitute(
         dest_class=sparql_escape_uri(dest_class),
         dest_predicate=sparql_escape_uri(dest_predicate),
         source_datasets="\n         ".join([sparql_escape_uri(source_dataset) for source_dataset in source_datasets]),
@@ -108,6 +110,9 @@ LIMIT $batch_size
         source_filter=source_filter
     )
     return query_string
+
+UNUNIFIED_BATCH_TEMPLATE_VARS = set(re.compile(r'\?\w+').findall(UNUNIFIED_BATCH_TEMPLATE.template))
+UNUNIFIED_BATCH_TEMPLATE_VARS.remove("?entity")
 
 def count_ununified(source_class, source_path_string, source_filter, source_graph):
     query_template = Template("""
