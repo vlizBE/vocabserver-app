@@ -149,7 +149,7 @@ def filter_count():
 
     warning = None
     if not shadowed_vars == []:
-        warning = f"Found vars in your filter that match other vars in the query: {', '.join(shadowed_vars)}"
+        warning = f"Found vars in your filter that overlap with internally used vars. This could lead to unexpected behaviour: {', '.join(shadowed_vars)}"
 
     temp_named_graph = build_temp_graph([dataset_uri])
 
