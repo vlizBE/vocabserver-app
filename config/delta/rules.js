@@ -1,6 +1,11 @@
 export default [
   {
-    match: {},
+    match: {
+      graph: {
+        type: 'uri',
+        value: 'http://mu.semte.ch/graphs/public'
+      }
+    },
     callback: {
       url: 'http://search/update',
       method: 'POST'
