@@ -35,24 +35,23 @@ from unification import (
     delete_dataset_subjects_from_graph,
 )
 from remove_vocab import (
-    VOCAB_DELETE_OPERATION,
-    VOCAB_DELETE_WAIT_OPERATION,
     start_vocab_delete_task,
     run_vocab_delete_operation,
     run_vocab_delete_wait_operation
 )
+from constants import (
+    FILE_RESOURCE_BASE,
+    TASKS_GRAPH,
+    VOCAB_GRAPH,
+    UNIFICATION_TARGET_GRAPH,
+    MU_APPLICATION_GRAPH,
+    DATA_GRAPH,
+    CONT_UN_OPERATION,
+    VOCAB_DELETE_OPERATION,
+    VOCAB_DELETE_WAIT_OPERATION,
+)
 
-# Maybe make these configurable
-FILE_RESOURCE_BASE = "http://example-resource.com/"
-TASKS_GRAPH = "http://mu.semte.ch/graphs/public"
 TEMP_GRAPH_BASE = "http://example-resource.com/graph/"
-VOCAB_GRAPH = "http://mu.semte.ch/graphs/public"
-UNIFICATION_TARGET_GRAPH = "http://mu.semte.ch/graphs/public"
-MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
-DATA_GRAPH = "http://mu.semte.ch/graphs/public"
-TEMP_GRAPH_BASE = "http://example-resource.com/graph/"
-
-CONT_UN_OPERATION = "http://mu.semte.ch/vocabularies/ext/ContentUnificationJob"
 
 def build_temp_graph(datasets):
     temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()

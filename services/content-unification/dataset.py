@@ -1,8 +1,7 @@
 import os
 from string import Template
 from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_escape_string
-
-MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
+from constants import MU_APPLICATION_GRAPH
 
 def get_dataset(dataset, graph=MU_APPLICATION_GRAPH):
     query_template = Template("""

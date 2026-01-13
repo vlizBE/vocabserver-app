@@ -1,6 +1,7 @@
 {
   "batch_size": 128,
   "max_batches": 0,
+  "number_of_threads": 4,
   "attachments_path_base": "/data/",
   "eager_indexing_sparql_query": false,
   "additive_indexes": true,
