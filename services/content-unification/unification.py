@@ -3,7 +3,7 @@ from string import Template
 import re
 from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_escape_string
 
-MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
+from constants import MU_APPLICATION_GRAPH
 NEW_SUBJECT_BASE = "http://example-resource.com/dataset-subject/"
 
 def get_property_paths(node_shape, metadata_graph):

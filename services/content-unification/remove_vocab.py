@@ -14,18 +14,17 @@ from sparql_util import (
     diff_graphs,
     copy_graph_to_temp,
 )
-
-MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
-DATA_GRAPH = "http://mu.semte.ch/graphs/public"
-
-CONTAINER_URI_PREFIX = "http://redpencil.data.gift/id/container/"
-JOB_URI_PREFIX = "http://redpencil.data.gift/id/job/"
-TASK_URI_PREFIX = "http://redpencil.data.gift/id/task/"
-TASKS_GRAPH = "http://mu.semte.ch/graphs/public"
-
-VOCAB_DELETE_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabDeleteJob"
-VOCAB_DELETE_WAIT_OPERATION = "http://mu.semte.ch/vocabularies/ext/VocabDeleteWaitJob"
-VOCAB_GRAPH = "http://mu.semte.ch/graphs/public"
+from constants import (
+    MU_APPLICATION_GRAPH,
+    DATA_GRAPH,
+    CONTAINER_URI_PREFIX,
+    JOB_URI_PREFIX,
+    TASK_URI_PREFIX,
+    TASKS_GRAPH,
+    VOCAB_DELETE_OPERATION,
+    VOCAB_DELETE_WAIT_OPERATION,
+    VOCAB_GRAPH,
+)
 
 def start_vocab_delete_task(vocab_iri, task_uuid, graph=MU_APPLICATION_GRAPH):
     query_template = Template("""
@@ -390,9 +389,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
     return query_string
 
-MAX_NO_PROGRESS = 5
-
 def run_vocab_delete_wait_operation(vocab_uri):
+    MAX_NO_PROGRESS = 5
     import time
 
     tries = 0

@@ -9,17 +9,17 @@ from escape_helpers import (
 )
 from helpers import generate_uuid, logger
 import traceback
-
-MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
-
-STATUS_BUSY = "http://redpencil.data.gift/id/concept/JobStatus/busy"
-STATUS_SCHEDULED = "http://redpencil.data.gift/id/concept/JobStatus/scheduled"
-STATUS_SUCCESS = "http://redpencil.data.gift/id/concept/JobStatus/success"
-STATUS_FAILED = "http://redpencil.data.gift/id/concept/JobStatus/failed"
+from constants import (
+    MU_APPLICATION_GRAPH,
+    STATUS_BUSY,
+    STATUS_SCHEDULED,
+    STATUS_SUCCESS,
+    STATUS_FAILED,
+    CONTAINER_URI_PREFIX,
+)
 
 
 def attach_task_results_container(task, results, graph=MU_APPLICATION_GRAPH):
-    CONTAINER_URI_PREFIX = 'http://redpencil.data.gift/id/container/'
     container_uuid = generate_uuid()
     container_uri = CONTAINER_URI_PREFIX + container_uuid
 
