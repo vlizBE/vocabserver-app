@@ -189,6 +189,9 @@ WHERE {
 
 
 def remove_vocab_source_datasets(vocab_uri: str, graph: str) -> str:
+    # ignore <http://mu.semte.ch/vocabularies/ext/datasetGraph> as this is used by 
+    # ldes-consumer-manager and it expects to read this after deleting a <http://rdfs.org/ns/void#Dataset>
+    # TODO: should this be fixed in ldes-consumer-manager, as now this data is kept in database indefinitely?
     query_template = Template("""
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -202,6 +205,7 @@ WHERE {
     $vocab a ext:VocabularyMeta ;
         ext:sourceDataset ?sourceDataset .
     ?sourceDataset ?sourceDatasetPred ?sourceDatasetObj.
+    FILTER (?sourceDatasetPred != <http://mu.semte.ch/vocabularies/ext/datasetGraph>)
 }
     """)
     query_string = query_template.substitute(

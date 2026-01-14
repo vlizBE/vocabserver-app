@@ -158,6 +158,7 @@ services:
       MODE: "${MODE:-production}"
       CONSUMER_IMAGE: redpencil/ldes-consumer:0.9.0
       COMPOSE_PROJECT: "vocabserver-app"
+      REMOVE_CONTAINERS_ON_DELETE: "true" # delete containers if dataset gets deleted
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     restart: always
