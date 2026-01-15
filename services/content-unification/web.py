@@ -32,6 +32,8 @@ from unification import (
     get_property_paths,
     get_ununified_batch,
     count_ununified,
+    get_delete_subjects_batch,
+    delete_subjects,
     delete_dataset_subjects_from_graph,
 )
 from remove_vocab import (
@@ -107,6 +109,35 @@ def run_vocab_unification(vocab_uri):
     prop_paths_res = query_sudo(prop_paths_qs)
 
     for path_props in prop_paths_res["results"]["bindings"]:
+        # Delete obsolete entities first
+        while True:
+            delete_subjects_batch_qs = get_delete_subjects_batch(
+                dest_class=path_props["destClass"]["value"],
+                source_datasets=[
+                    vocab_source["sourceDataset"]["value"]
+                    for vocab_source in vocab_sources
+                ],
+                source_class=path_props["sourceClass"]["value"],
+                source_path_string=path_props["sourcePathString"]["value"],  # !
+                source_filter=path_props.get("sourceFilter", {}).get("value") or '',
+                source_graph=temp_named_graph,
+                target_graph=VOCAB_GRAPH,
+                batch_size=10,
+             )
+            batch_res = query_sudo(delete_subjects_batch_qs)
+            if not batch_res["results"]["bindings"]:
+                logger.info("Finished deleting obsolete unifications")
+                break
+            else:
+                logger.info("Deleting obsolete batch")
+
+            delete_subjects_qs = delete_subjects(
+                target_subjects=[b["targetSubject"]["value"] for b in batch_res["results"]["bindings"]],
+                target_graph=VOCAB_GRAPH
+            )
+            update_sudo(delete_subjects_qs)
+
+        # Then unify new ones
         while True:
             get_batch_qs = get_ununified_batch(
                 path_props["destClass"]["value"],

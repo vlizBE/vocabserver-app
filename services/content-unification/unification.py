@@ -134,6 +134,71 @@ SELECT (COUNT(DISTINCT ?entity) AS ?count) {
     )
     return query_string
 
+def get_delete_subjects_batch(
+    dest_class,
+    source_datasets,
+    source_class,
+    source_path_string,
+    source_filter,
+    source_graph,
+    target_graph,
+    batch_size
+) -> str:
+    query_template = Template("""
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT ?targetSubject {
+    VALUES ?sourceDataset {
+        $source_datasets
+    }
+    GRAPH $target_graph {
+        ?targetSubject prov:wasDerivedFrom ?sourceSubject ;
+            a $dest_class ;
+            dct:source ?sourceDataset .
+    }
+    FILTER NOT EXISTS {
+        GRAPH $source_graph {
+            ?sourceSubject
+                a $source_class ;
+                $source_path_string ?sourceValue .
+            BIND (?sourceSubject as ?entity)
+            $source_filter
+        }
+    }
+}
+LIMIT $batch_size
+    """)
+    query_string = query_template.substitute(
+        dest_class=sparql_escape_uri(dest_class),
+        source_datasets="\n        ".join([sparql_escape_uri(source_dataset) for source_dataset in source_datasets]),
+        source_class=sparql_escape_uri(source_class),
+        source_path_string=source_path_string,
+        source_filter=source_filter,
+        source_graph=sparql_escape_uri(source_graph),
+        target_graph=sparql_escape_uri(target_graph),
+        batch_size=batch_size
+    )
+    return query_string
+
+def delete_subjects(target_subjects, target_graph):
+    query_template = Template("""
+DELETE {
+    GRAPH $target_graph {
+        ?targetSubject ?p ?o .
+    }
+} WHERE {
+    VALUES ?targetSubject {
+        $target_subjects
+    }
+    ?targetSubject ?p ?o .
+}
+    """)
+    query_string = query_template.substitute(
+        target_subjects="\n        ".join([sparql_escape_uri(subject) for subject in target_subjects]),
+        target_graph=sparql_escape_uri(target_graph)
+    )
+    return query_string
 
 # delete the subjects provided that are part of a dataset
 # note that these are related to the subject uris in our internal app via prov:wasDerivedFrom,
