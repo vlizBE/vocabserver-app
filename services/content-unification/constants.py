@@ -24,3 +24,5 @@ STATUS_FAILED = "http://redpencil.data.gift/id/concept/JobStatus/failed"
 RELATIVE_STORAGE_PATH = os.environ.get("MU_APPLICATION_FILE_STORAGE_PATH", "").rstrip("/")
 STORAGE_PATH = f"/share/{RELATIVE_STORAGE_PATH}"
 
+UNIFICATION_BATCH_SIZE = 10
+

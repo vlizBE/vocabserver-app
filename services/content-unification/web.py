@@ -51,6 +51,7 @@ from constants import (
     CONT_UN_OPERATION,
     VOCAB_DELETE_OPERATION,
     VOCAB_DELETE_WAIT_OPERATION,
+    UNIFICATION_BATCH_SIZE,
 )
 
 TEMP_GRAPH_BASE = "http://example-resource.com/graph/"
@@ -122,7 +123,7 @@ def run_vocab_unification(vocab_uri):
                 source_filter=path_props.get("sourceFilter", {}).get("value") or '',
                 source_graph=temp_named_graph,
                 target_graph=VOCAB_GRAPH,
-                batch_size=10,
+                batch_size=UNIFICATION_BATCH_SIZE,
              )
             batch_res = query_sudo(delete_subjects_batch_qs)
             if not batch_res["results"]["bindings"]:
@@ -140,18 +141,18 @@ def run_vocab_unification(vocab_uri):
         # Then unify new ones
         while True:
             get_batch_qs = get_ununified_batch(
-                path_props["destClass"]["value"],
-                path_props["destPath"]["value"],
-                [
+                dest_class=path_props["destClass"]["value"],
+                dest_predicate=path_props["destPath"]["value"],
+                source_datasets=[
                     vocab_source["sourceDataset"]["value"]
                     for vocab_source in vocab_sources
                 ],
-                path_props["sourceClass"]["value"],
-                path_props["sourcePathString"]["value"],  # !
-                path_props.get("sourceFilter", {}).get("value") or '',
-                temp_named_graph,
-                VOCAB_GRAPH,
-                10,
+                source_class=path_props["sourceClass"]["value"],
+                source_path_string=path_props["sourcePathString"]["value"],  # !
+                source_filter=path_props.get("sourceFilter", {}).get("value") or '',
+                source_graph=temp_named_graph,
+                target_graph=VOCAB_GRAPH,
+                batch_size=UNIFICATION_BATCH_SIZE,
             )
             # We might want to dump intermediary unified content to file before committing to store
             batch_res = query_sudo(get_batch_qs)
