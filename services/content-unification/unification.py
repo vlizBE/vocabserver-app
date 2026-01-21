@@ -85,7 +85,8 @@ WHERE {
                 $dest_predicate ?sourceValue .
         }
     }
-    GRAPH $source_graph {
+    VALUES ?source_graph { $source_graphs }
+    GRAPH ?source_graph {
         ?sourceSubject
             a $source_class ;
             $source_path_string ?sourceValue .
@@ -103,7 +104,7 @@ def get_ununified_batch(dest_class,
                         source_class,
                         source_path_string,
                         source_filter,
-                        source_graph,
+                        source_graphs,
                         target_graph,
                         batch_size):
     query_string = UNUNIFIED_BATCH_TEMPLATE.substitute(
@@ -112,7 +113,7 @@ def get_ununified_batch(dest_class,
         source_datasets="\n         ".join([sparql_escape_uri(source_dataset) for source_dataset in source_datasets]),
         source_class=sparql_escape_uri(source_class),
         source_path_string=source_path_string,  # !this is already formatted as a sparql predicate path by the frontend. 
-        source_graph=sparql_escape_uri(source_graph),
+        source_graphs=" ".join([sparql_escape_uri(source_graph) for source_graph in source_graphs]),
         target_graph=sparql_escape_uri(target_graph),
         batch_size=batch_size,
         new_subject_uri_base=sparql_escape_string(NEW_SUBJECT_BASE),
@@ -123,10 +124,11 @@ def get_ununified_batch(dest_class,
 UNUNIFIED_BATCH_TEMPLATE_VARS = set(re.compile(r'\?\w+').findall(UNUNIFIED_BATCH_TEMPLATE.template))
 UNUNIFIED_BATCH_TEMPLATE_VARS.remove("?entity")
 
-def count_ununified(source_class, source_path_string, source_filter, source_graph):
+def count_ununified(source_class, source_path_string, source_filter, source_graphs):
     query_template = Template("""
 SELECT (COUNT(DISTINCT ?entity) AS ?count) {
-    GRAPH $source_graph {
+    VALUES ?source_graph { $source_graphs }
+    GRAPH ?source_graph {
         ?sourceSubject
             a $source_class ;
             $source_path_string ?sourceValue .
@@ -139,7 +141,7 @@ SELECT (COUNT(DISTINCT ?entity) AS ?count) {
         source_class=sparql_escape_uri(source_class),
         source_path_string=source_path_string,
         source_filter=source_filter,
-        source_graph=sparql_escape_uri(source_graph),
+        source_graphs=" ".join([sparql_escape_uri(source_graph) for source_graph in source_graphs]),
     )
     return query_string
 
@@ -305,7 +307,7 @@ def get_delete_subjects_batch(
     source_class,
     source_path_string,
     source_filter,
-    source_graph,
+    source_graphs,
     target_graph,
     batch_size
 ) -> str:
@@ -323,7 +325,8 @@ SELECT ?targetSubject {
             dct:source ?sourceDataset .
     }
     FILTER NOT EXISTS {
-        GRAPH $source_graph {
+        VALUES ?source_graph { $source_graphs }
+        GRAPH ?source_graph {
             ?sourceSubject
                 a $source_class ;
                 $source_path_string ?sourceValue .
@@ -340,7 +343,7 @@ LIMIT $batch_size
         source_class=sparql_escape_uri(source_class),
         source_path_string=source_path_string,
         source_filter=source_filter,
-        source_graph=sparql_escape_uri(source_graph),
+        source_graphs=" ".join([sparql_escape_uri(source_graph) for source_graph in source_graphs]),
         target_graph=sparql_escape_uri(target_graph),
         batch_size=batch_size
     )

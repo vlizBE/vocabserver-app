@@ -48,7 +48,7 @@ LDES_TYPE = "http://vocabsearch.data.gift/dataset-types/LDES"
 UPDATE_DATASET_DUMP_CRON_PATTERN = os.environ.get("UPDATE_DATASET_DUMP_CRON_PATTERN")
 
 
-def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
+def load_dataset_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     query_string = construct_get_file_query(uri, graph)
     file_result = query_sudo(query_string)["results"]["bindings"][0]
 
@@ -58,7 +58,7 @@ def load_vocab_file(uri: str, graph: str = MU_APPLICATION_GRAPH):
     return g
 
 
-def download_vocab_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH):
+def download_dataset_file(url: str, format: str, graph: str = MU_APPLICATION_GRAPH):
     mime_type, file_extension = FORMAT_TO_MIME_EXT[format]
     accept_string = ", ".join(
         value[0] + (";q=1.0" if key == format else ";q=0.1")
@@ -121,23 +121,6 @@ def escape(binding):
     else:
         return Literal(binding["value"])
 
-
-def load_vocab_graph(graph: str):
-    query_template = Template("""
-SELECT ?s ?p ?o WHERE {
-    GRAPH $graph {
-        ?s ?p ?o .
-    }
-}
-""")
-    query_string = query_template.substitute(graph=sparql_escape_uri(graph))
-    results = query_sudo(query_string)["results"]["bindings"]
-    g = Graph()
-    for triple in results:
-        g.add(tuple(map(escape, (triple["s"], triple["p"], triple["o"]))))
-    return g
-
-
 def get_task_uri(task_uuid: str, graph: str = MU_APPLICATION_GRAPH):
     query_template = Template("""
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -162,13 +145,17 @@ def redownload_dataset(dataset_uri):
     dataset_result = query_sudo(get_dataset(dataset_uri, VOID_DATASET_GRAPH))['results']['bindings'][0]
     _type = dataset_result['type']['value']
     if _type == LDES_TYPE:
-        graph = dataset_result['dataset_graph']['value']
-        file_uri = graph_to_file(graph, FILES_GRAPH)
+        # graph = dataset_result['dataset_graph']['value']
+        # file_uri = graph_to_file(graph, FILES_GRAPH)
+        # for LDES the data is automatically reloaded. Dumping to file takes too long. Instead use the LDES-data graph.
+        # This means the download job for LDES will automatically succeed.
+        # TODO: This should maybe fire up a recheck in the LDES-consumer?
+        pass
     else:
         download_link = dataset_result['download_url']['value']
         file_format = dataset_result['format']['value']
-        file_uri = download_vocab_file(download_link, file_format, FILES_GRAPH)
-    update_sudo(update_dataset_download(dataset_uri, file_uri, VOID_DATASET_GRAPH))
+        file_uri = download_dataset_file(download_link, file_format, FILES_GRAPH)
+        update_sudo(update_dataset_download(dataset_uri, file_uri, VOID_DATASET_GRAPH))
     return dataset_uri
 
 
@@ -203,33 +190,34 @@ def generate_dataset_structural_metadata(dataset_uri, should_return_vocab):
         dataset_graph = dataset_res.get("dataset_graph", {}).get("value")
         data_dump = dataset_res.get("data_dump", {}).get("value")
 
-        logger.info(f"Dataset type: {dataset_type}")
-        logger.info(f"Dataset graph: {dataset_graph}")
-        logger.info(f"Data dump: {data_dump}")
+        logger.info(f"dataset <{dataset_uri}> with type: {dataset_type} | Dataset graph: {dataset_graph} | Data dump: {data_dump}")
 
         # We update dataset metadata by purging old and re-loadind new data (instead of applying the diff)
         # This has some unexpected consequences, since ldes consumer-manager triggers on addition and
         # removal of void:Datasets. Since our actual intention isn't to remove the whole object (including type), but
         # rather to update more detailed properties, we exclude the `rdf:type` predicate from the removal process.
-        logger.info("Deleting existing VoID metadata")
+        logger.info(f"Deleting existing VoID metadata for <{dataset_uri}>")
         deleteVoID(dataset_uri, VOID_DATASET_GRAPH)
+        if dataset_graph:
+            # Graph-based dataset (from LDES-consumer)
+            logger.info(f"Processing graph-based dataset <{dataset_uri}> with graph: {dataset_graph}")
+            generateVoID(dataset_graph, dataset_uri, VOID_DATASET_GRAPH)
 
-        if data_dump:
+        elif data_dump:
             # File-based dataset: load file into temporary graph for analysis
             temp_graph_uri = f"http://temp.vocabsearch.com/graph/{generate_uuid()}"
-            logger.info(f"Processing file-based dataset with data dump: {data_dump}")
-            logger.info(f"Loading into temporary graph: {temp_graph_uri}")
+            logger.info(f"Processing file-based dataset <{dataset_uri}> with data dump: {data_dump} | Loading into temporary graph: {temp_graph_uri}")
 
             try:
                 # Load file content into temporary graph in triplestore
-                file_graph = load_vocab_file(data_dump, FILES_GRAPH)
-                logger.info(f"Loaded {len(file_graph)} triples from file")
+                file_graph = load_dataset_file(data_dump, FILES_GRAPH)
+                logger.info(f"dataset <{dataset_uri}>: Loaded {len(file_graph)} triples from file to local graph")
 
                 # Serialize to temporary graph in triplestore
                 for query_string in serialize_graph_to_sparql(file_graph, temp_graph_uri):
                     update_sudo(query_string)
 
-                logger.info("File data loaded into temporary graph, generating VoID metadata")
+                logger.info(f"dataset <{dataset_uri}>: File data loaded into temporary graph <{temp_graph_uri}> in triplestore, generating VoID metadata")
                 # Generate VoID from temporary graph
                 generateVoID(temp_graph_uri, dataset_uri, VOID_DATASET_GRAPH)
 
@@ -237,15 +225,9 @@ def generate_dataset_structural_metadata(dataset_uri, should_return_vocab):
                 # Clean up temporary graph (unification will reload from file when needed)
                 try:
                     drop_graph_virtuoso(temp_graph_uri)
-                    logger.info(f"Cleaned up temporary graph: {temp_graph_uri}")
+                    logger.info(f"dataset <{dataset_uri}>: Cleaned up temporary graph: {temp_graph_uri}")
                 except Exception as cleanup_error:
-                    logger.warning(f"Failed to cleanup temporary graph {temp_graph_uri}: {cleanup_error}")
-
-        elif dataset_graph:
-            # Graph-based dataset (including LDES)
-            logger.info(f"Processing graph-based dataset with graph: {dataset_graph}")
-            generateVoID(dataset_graph, dataset_uri, VOID_DATASET_GRAPH)
-
+                    logger.warning(f"dataset <{dataset_uri}>: Failed to cleanup temporary graph {temp_graph_uri}: {cleanup_error}")
         else:
             # Neither graph nor file dump available
             raise ValueError(f"Dataset {dataset_uri} has neither dataset_graph nor data_dump. Cannot generate metadata.")

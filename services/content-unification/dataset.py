@@ -4,6 +4,7 @@ from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_esc
 from constants import MU_APPLICATION_GRAPH
 
 def get_dataset(dataset, graph=MU_APPLICATION_GRAPH):
+    # TODO: check to make sure this *always* returns dataset_graph if it is available
     query_template = Template("""
 PREFIX void: <http://rdfs.org/ns/void#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
