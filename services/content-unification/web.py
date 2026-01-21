@@ -1,6 +1,7 @@
 import os
 from string import Template
 import threading
+import time
 
 from rdflib import Graph, URIRef
 import requests
@@ -47,6 +48,7 @@ from remove_vocab import (
 )
 from constants import (
     FILE_RESOURCE_BASE,
+    SLEEP_MS_BETWEEN_QUERIES_UNIFY,
     TASKS_GRAPH,
     VOCAB_GRAPH,
     UNIFICATION_TARGET_GRAPH,
@@ -133,6 +135,9 @@ def run_vocab_unification(vocab_uri):
                 target_graph=VOCAB_GRAPH
             )
             update_sudo(delete_subjects_qs)
+            if(SLEEP_MS_BETWEEN_QUERIES_UNIFY and SLEEP_MS_BETWEEN_QUERIES_UNIFY >0 ):
+              logger.info(f"Waiting for {SLEEP_MS_BETWEEN_QUERIES_UNIFY} ms")
+              time.sleep(SLEEP_MS_BETWEEN_QUERIES_UNIFY / 1000)
 
         # Then unify new ones
         while True:
@@ -160,6 +165,9 @@ def run_vocab_unification(vocab_uri):
             g = sparql_construct_res_to_graph(batch_res)
             for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
                 update_sudo(query_string)
+            if(SLEEP_MS_BETWEEN_QUERIES_UNIFY and SLEEP_MS_BETWEEN_QUERIES_UNIFY > 0 ):
+              logger.info(f"Waiting for {SLEEP_MS_BETWEEN_QUERIES_UNIFY} ms")
+              time.sleep(SLEEP_MS_BETWEEN_QUERIES_UNIFY / 1000)
     except Exception as e:
         logger.error(f"Error during vocab {vocab_uri} unification: {e}")
         raise e
