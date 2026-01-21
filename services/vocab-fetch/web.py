@@ -310,6 +310,7 @@ def run_tasks():
 
 def update_ldes_dataset_dump():
     logger.info("querying for LDES datasets with updates (requiring an update of their file-dump)")
+    # TODO: LDES have no dumps anymore. This should maybe check the last unification job instead.
     datasets = query_outdated_dump_ldes_datasets()
     if datasets:
         logger.info("LDES datasets needing dump update: " + str(datasets))
