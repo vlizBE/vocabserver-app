@@ -79,7 +79,7 @@ WHERE {
     
     FILTER NOT EXISTS {
         GRAPH $target_graph {
-            ?targetSubject 
+            ?internalSubject 
                 prov:wasDerivedFrom ?sourceSubject ;
                 a $dest_class ;
                 $dest_predicate ?sourceValue .
