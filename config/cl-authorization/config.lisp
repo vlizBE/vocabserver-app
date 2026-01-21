@@ -32,6 +32,8 @@
 (define-graph public ("http://mu.semte.ch/graphs/public")
     ("http://mu.semte.ch/vocabularies/ext/VocabularyMeta" -> _)
     ("http://mu.semte.ch/vocabularies/ext/DatasetType" -> _)
+    ("http://mu.semte.ch/vocabularies/ext/FilterCountInput" -> _)
+    ("http://mu.semte.ch/vocabularies/ext/FilterCountOutput" -> _)
     ("http://www.w3.org/ns/shacl#NodeShape" -> _)
     ("http://www.w3.org/ns/shacl#PropertyShape" -> _)
     ("http://mu.semte.ch/vocabularies/ext/VocabularyMeta" -> _)

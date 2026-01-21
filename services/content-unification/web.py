@@ -32,6 +32,10 @@ from unification import (
     get_property_paths,
     get_ununified_batch,
     count_ununified,
+    start_filter_count_task,
+    get_filter_count_input,
+    remove_filter_count_input,
+    write_filter_count_output,
     get_delete_subjects_batch,
     delete_subjects,
     delete_dataset_subjects_from_graph,
@@ -49,6 +53,7 @@ from constants import (
     MU_APPLICATION_GRAPH,
     DATA_GRAPH,
     CONT_UN_OPERATION,
+    FILTER_COUNT_OPERATION,
     VOCAB_DELETE_OPERATION,
     VOCAB_DELETE_WAIT_OPERATION,
     UNIFICATION_BATCH_SIZE,
@@ -175,6 +180,30 @@ def filter_count():
     source_path_string= request.args['source_path_string']
     source_filter: str = request.args['filter']
 
+    task_uuid, qs = start_filter_count_task(
+        dataset_uri=dataset_uri,
+        source_class=source_class,
+        source_path_string=source_path_string,
+        source_filter=source_filter,
+        graph=TASKS_GRAPH
+    )
+    query_sudo(qs)
+    return {
+        'meta': {
+            'task_uuid': task_uuid
+        }
+    }
+
+def run_filter_count_task(input):
+    input_qs = get_filter_count_input(input)
+    input_res = query_sudo(input_qs)
+    input_bindings= input_res["results"]["bindings"][0]
+
+    dataset_uri = input_bindings["dataset"]["value"]
+    source_class = input_bindings["sourceClass"]["value"]
+    source_path_string = input_bindings["sourcePathString"]["value"]
+    source_filter = input_bindings["sourceFilter"]["value"]
+
     from unification import UNUNIFIED_BATCH_TEMPLATE_VARS
     shadowed_vars = [var for var in UNUNIFIED_BATCH_TEMPLATE_VARS if source_filter.find(var) != -1]
 
@@ -192,23 +221,32 @@ def filter_count():
     try:
         filter_res = query_sudo(count_query)
     except (EndPointInternalError) as e:
-        return {
-            'meta': {
-                'error': str(e),
-                'query': count_query,
-                'valid': False,
-            }
-        }
+        output_uri, qs = write_filter_count_output(
+                graph=DATA_GRAPH,
+                dataset_uri=dataset_uri,
+                query=count_query.strip(),
+                valid=False,
+                error=str(e),
+        )
+        update_sudo(qs)
+        return output_uri
     finally:
-         drop_graph(temp_named_graph)
+        drop_graph(temp_named_graph)
+        update_sudo(remove_filter_count_input(input_uri=input, graph=DATA_GRAPH))
 
     count = filter_res["results"]["bindings"][0]["count"]["value"]
     count = int(count)
 
-
-    return {
-        'meta': { 'count': count, 'valid': True, 'warning': warning }
-    }
+    output_uri, qs = write_filter_count_output(
+        graph=DATA_GRAPH,
+        dataset_uri=dataset_uri,
+        query=count_query.strip(),
+        valid=True,
+        count=count,
+        warning=warning
+    )
+    update_sudo(qs)
+    return output_uri
 
 
 @app.route("/delete-vocabulary/<vocab_uuid>", methods=("DELETE",))
@@ -237,7 +275,7 @@ def run_scheduled_tasks():
     try:
         while True:
             task_q = find_actionable_task_of_type(
-                [CONT_UN_OPERATION, VOCAB_DELETE_OPERATION, VOCAB_DELETE_WAIT_OPERATION],
+                [CONT_UN_OPERATION, FILTER_COUNT_OPERATION, VOCAB_DELETE_OPERATION, VOCAB_DELETE_WAIT_OPERATION],
                 TASKS_GRAPH)
             task_res = query_sudo(task_q)
             if task_res["results"]["bindings"]:
@@ -258,6 +296,16 @@ def run_scheduled_tasks():
                     similar_tasks,
                     TASKS_GRAPH,
                     lambda sources: [run_vocab_unification(sources[0])],
+                    query_sudo,
+                    update_sudo,
+                )
+            elif task_operation == FILTER_COUNT_OPERATION:
+                logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                logger.debug(f"Updating at the same time: {' | '.join(similar_tasks)}")
+                run_tasks(
+                    similar_tasks,
+                    TASKS_GRAPH,
+                    lambda sources: [run_filter_count_task(sources[0])],
                     query_sudo,
                     update_sudo,
                 )

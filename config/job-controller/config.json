@@ -49,5 +49,14 @@
         "nextIndex": "0"
       }
     ]
+  },
+  "http://lblod.data.gift/id/jobs/concept/JobOperation/filter-count": {
+    "tasksConfiguration": [
+      {
+        "currentOperation": null,
+        "nextOperation": "http://mu.semte.ch/vocabularies/ext/FilterCountJob",
+        "nextIndex": "0"
+      }
+    ]
   }
 }
