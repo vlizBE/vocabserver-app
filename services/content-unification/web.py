@@ -173,12 +173,12 @@ def run_vocab_unification(vocab_uri):
     drop_graph(temp_named_graph)
     return vocab_uri
 
-@app.route("/filter-count/")
+@app.route("/filter-count/", methods=('POST',))
 def filter_count():
-    dataset_uri = request.args['dataset_uri']
-    source_class = request.args['class']
-    source_path_string= request.args['source_path_string']
-    source_filter: str = request.args['filter']
+    dataset_uri = request.form['dataset_uri']
+    source_class = request.form['class']
+    source_path_string= request.form['source_path_string']
+    source_filter: str = request.form['filter']
 
     task_uuid, qs = start_filter_count_task(
         dataset_uri=dataset_uri,
