@@ -52,6 +52,13 @@ defmodule Dispatcher do
     forward conn, path, "http://resource/vocabularies/"
   end
 
+  match "/filter-count-inputs/*path", @json do
+    forward conn, path, "http://resource/filter-count-inputs/"
+  end
+  match "/filter-count-outputs/*path", @json do
+    forward conn, path, "http://resource/filter-count-outputs/"
+  end
+
   match "/shacl-property-shapes/*path", @json do
     forward conn, path, "http://resource/shacl-property-shapes/"
   end

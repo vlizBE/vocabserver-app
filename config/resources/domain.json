@@ -39,6 +39,88 @@
       },
       "features": ["include-uri"],
       "new-resource-base": "https://my-application.com/vocabularies/"
+    },
+    "filter-count-inputs": {
+      "name": "filter-count-input",
+      "class": "ext:FilterCountInput",
+      "attributes": {
+        "created": {
+          "type": "datetime",
+          "predicate": "dct:created"
+        },
+        "modified": {
+          "type": "datetime",
+          "predicate": "dct:modified"
+        },
+        "source-class": {
+          "type": "url",
+          "predicate": "ext:sourceClass"
+        },
+        "source-path-string": {
+          "type": "string",
+          "predicate": "ext:sourcePathString"
+        },
+        "source-filter": {
+          "type": "string",
+          "predicate": "ext:sourceFilter"
+        }
+      },
+      "relationships": {
+        "dataset": {
+          "predicate": "ext:dataset",
+          "target": "dataset",
+          "cardinality": "one"
+        }
+      },
+      "features": [
+        "include-uri"
+      ],
+      "new-resource-base": "http://my-application.com/filter-count-input/"
+    },
+    "filter-count-outputs": {
+      "name": "filter-count-output",
+      "class": "ext:FilterCountOutput",
+      "attributes": {
+        "created": {
+          "type": "datetime",
+          "predicate": "dct:created"
+        },
+        "modified": {
+          "type": "datetime",
+          "predicate": "dct:modified"
+        },
+        "query": {
+          "type": "string",
+          "predicate": "ext:query"
+        },
+        "valid": {
+          "type": "boolean",
+          "predicate": "ext:valid"
+        },
+        "count": {
+          "type": "integer",
+          "predicate": "ext:count"
+        },
+        "warning": {
+          "type": "string",
+          "predicate": "ext:warning"
+        },
+        "error": {
+          "type": "string",
+          "predicate": "ext:error"
+        }
+      },
+      "relationships": {
+        "dataset": {
+          "predicate": "ext:dataset",
+          "target": "dataset",
+          "cardinality": "one"
+        }
+      },
+      "features": [
+        "include-uri"
+      ],
+      "new-resource-base": "http://my-application.com/filter-count-output/"
     }
   }
 }

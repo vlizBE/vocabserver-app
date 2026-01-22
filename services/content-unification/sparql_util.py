@@ -34,11 +34,16 @@ def json_to_term(json_term):
     else:
         if 'xml:lang' in json_term:  # SELECT
             lang = json_term['xml:lang']
+            return Literal(json_term['value'], lang=lang)
         elif 'lang' in json_term:  # CONSTRUCT
             lang = json_term['lang']
+            return Literal(json_term['value'], lang=lang)
         else:
-            lang = None
-        return Literal(json_term['value'], lang=lang)
+            if 'datatype' in json_term:
+                return Literal(json_term['value'], datatype=json_term['datatype'])
+            else:
+                return Literal(json_term['value'])
+        
 
 def sparql_construct_res_to_graph(res):
     """ Turn results of a sparql construct query into an rdflib graph """

@@ -1,6 +1,7 @@
 import os
 from string import Template
 import threading
+import time
 
 from rdflib import Graph, URIRef
 import requests
@@ -32,6 +33,12 @@ from unification import (
     get_property_paths,
     get_ununified_batch,
     count_ununified,
+    start_filter_count_task,
+    get_filter_count_input,
+    remove_filter_count_input,
+    write_filter_count_output,
+    get_delete_subjects_batch,
+    delete_subjects,
     delete_dataset_subjects_from_graph,
 )
 from remove_vocab import (
@@ -41,53 +48,47 @@ from remove_vocab import (
 )
 from constants import (
     FILE_RESOURCE_BASE,
+    SLEEP_MS_BETWEEN_QUERIES_UNIFY,
     TASKS_GRAPH,
     VOCAB_GRAPH,
     UNIFICATION_TARGET_GRAPH,
     MU_APPLICATION_GRAPH,
     DATA_GRAPH,
     CONT_UN_OPERATION,
+    FILTER_COUNT_OPERATION,
     VOCAB_DELETE_OPERATION,
     VOCAB_DELETE_WAIT_OPERATION,
+    UNIFICATION_BATCH_SIZE,
 )
 
 TEMP_GRAPH_BASE = "http://example-resource.com/graph/"
 
-def build_temp_graph(datasets):
+def build_temp_graphs(datasets):
+    # for every dataset:
+    # if file-based, load into temporary graph
+    # if graph-based, return graph directly
+    graphs = set()
     temp_named_graph = TEMP_GRAPH_BASE + generate_uuid()
 
     for dataset in datasets:
         dataset_versions = query_sudo(
             get_dataset(dataset, VOCAB_GRAPH)
         )["results"]["bindings"]
-        print(dataset_versions)
-        # TODO: LDES check
-        if "data_dump" in dataset_versions[0].keys():
+
+        if "dataset_graph" in dataset_versions[0].keys():
+            graphs.add(dataset_versions[0]["dataset_graph"]["value"])
+
+        elif "data_dump" in dataset_versions[0].keys():
+            graphs.add(temp_named_graph)
             temp_named_graph = load_file_to_db(
                 dataset_versions[0]["data_dump"]["value"], VOCAB_GRAPH, temp_named_graph
             )
-            if len(dataset_versions) > 1:  # previous dumps exist
-                old_temp_named_graph = load_file_to_db(
-                    dataset_versions[1]["data_dump"]["value"], VOCAB_GRAPH
-                )
-                # diffing now happens in triplestore. If we make sure everything gets stored
-                # as sorted ntriples files, this can be done on file basis. Would improve perf
-                # and avoid having to load everything to triplestore with python rdflib store
-                # as an intermediary (!)
-                diff_subjects = diff_graphs(old_temp_named_graph, temp_named_graph)
-                for diff_subjects_batch in batched(diff_subjects, 10):
-                    query_sudo(delete_dataset_subjects_from_graph(diff_subjects_batch, VOCAB_GRAPH))
-                drop_graph(old_temp_named_graph)
+            # this should only load in the data, diffing is done by unification itself.
         else:
-            # since we now also save ldes datasets to files, ldes datasets can also get
-            # cleanups that are made possible by diffing above.
-            # This should become a dead code path
-            # keep until we can assure that an ldes dataset always has a dump (still needs cron to trigger the dump download)
-            copy_graph_to_temp(
-                dataset_versions[0]["dataset_graph"]["value"], temp_named_graph
-            )
+            pass
+            # TODO: return error?
 
-    return temp_named_graph
+    return list(graphs), temp_named_graph
 
 def run_vocab_unification(vocab_uri):
     vocab_sources = query_sudo(get_vocabulary(vocab_uri, VOCAB_GRAPH))["results"][
@@ -99,28 +100,60 @@ def run_vocab_unification(vocab_uri):
 
     datasets = [vocab_source["sourceDataset"]["value"] for vocab_source in vocab_sources]
 
-    temp_named_graph = build_temp_graph(datasets)
+    dataset_graphs, temp_named_graph = build_temp_graphs(datasets)
+    try:
+      prop_paths_qs = get_property_paths(
+          vocab_sources[0]["mappingShape"]["value"], VOCAB_GRAPH
+      )
+      prop_paths_res = query_sudo(prop_paths_qs)
 
-    prop_paths_qs = get_property_paths(
-        vocab_sources[0]["mappingShape"]["value"], VOCAB_GRAPH
-    )
-    prop_paths_res = query_sudo(prop_paths_qs)
-
-    for path_props in prop_paths_res["results"]["bindings"]:
+      for path_props in prop_paths_res["results"]["bindings"]:
+        # Delete obsolete entities first
         while True:
-            get_batch_qs = get_ununified_batch(
-                path_props["destClass"]["value"],
-                path_props["destPath"]["value"],
-                [
+            delete_subjects_batch_qs = get_delete_subjects_batch(
+                dest_class=path_props["destClass"]["value"],
+                source_datasets=[
                     vocab_source["sourceDataset"]["value"]
                     for vocab_source in vocab_sources
                 ],
-                path_props["sourceClass"]["value"],
-                path_props["sourcePathString"]["value"],  # !
-                path_props.get("sourceFilter", {}).get("value") or '',
-                temp_named_graph,
-                VOCAB_GRAPH,
-                10,
+                source_class=path_props["sourceClass"]["value"],
+                source_path_string=path_props["sourcePathString"]["value"],  # !
+                source_filter=path_props.get("sourceFilter", {}).get("value") or '',
+                source_graphs=dataset_graphs,
+                target_graph=VOCAB_GRAPH,
+                batch_size=UNIFICATION_BATCH_SIZE,
+             )
+            batch_res = query_sudo(delete_subjects_batch_qs)
+            if not batch_res["results"]["bindings"]:
+                logger.info("Finished deleting obsolete unifications")
+                break
+            else:
+                logger.info("Deleting obsolete batch")
+
+            delete_subjects_qs = delete_subjects(
+                target_subjects=[b["targetSubject"]["value"] for b in batch_res["results"]["bindings"]],
+                target_graph=VOCAB_GRAPH
+            )
+            update_sudo(delete_subjects_qs)
+            if(SLEEP_MS_BETWEEN_QUERIES_UNIFY and SLEEP_MS_BETWEEN_QUERIES_UNIFY >0 ):
+              logger.info(f"Waiting for {SLEEP_MS_BETWEEN_QUERIES_UNIFY} ms")
+              time.sleep(SLEEP_MS_BETWEEN_QUERIES_UNIFY / 1000)
+
+        # Then unify new ones
+        while True:
+            get_batch_qs = get_ununified_batch(
+                dest_class=path_props["destClass"]["value"],
+                dest_predicate=path_props["destPath"]["value"],
+                source_datasets=[
+                    vocab_source["sourceDataset"]["value"]
+                    for vocab_source in vocab_sources
+                ],
+                source_class=path_props["sourceClass"]["value"],
+                source_path_string=path_props["sourcePathString"]["value"],  # !
+                source_filter=path_props.get("sourceFilter", {}).get("value") or '',
+                source_graphs=dataset_graphs,
+                target_graph=VOCAB_GRAPH,
+                batch_size=UNIFICATION_BATCH_SIZE,
             )
             # We might want to dump intermediary unified content to file before committing to store
             batch_res = query_sudo(get_batch_qs)
@@ -132,16 +165,46 @@ def run_vocab_unification(vocab_uri):
             g = sparql_construct_res_to_graph(batch_res)
             for query_string in serialize_graph_to_sparql(g, VOCAB_GRAPH):
                 update_sudo(query_string)
-
-    drop_graph(temp_named_graph)
+            if(SLEEP_MS_BETWEEN_QUERIES_UNIFY and SLEEP_MS_BETWEEN_QUERIES_UNIFY > 0 ):
+              logger.info(f"Waiting for {SLEEP_MS_BETWEEN_QUERIES_UNIFY} ms")
+              time.sleep(SLEEP_MS_BETWEEN_QUERIES_UNIFY / 1000)
+    except Exception as e:
+        logger.error(f"Error during vocab {vocab_uri} unification: {e}")
+        raise e
+    finally:
+        drop_graph(temp_named_graph)
     return vocab_uri
 
-@app.route("/filter-count/")
+@app.route("/filter-count/", methods=('POST',))
 def filter_count():
-    dataset_uri = request.args['dataset_uri']
-    source_class = request.args['class']
-    source_path_string= request.args['source_path_string']
-    source_filter: str = request.args['filter']
+    dataset_uri = request.form['dataset_uri']
+    source_class = request.form['class']
+    source_path_string= request.form['source_path_string']
+    source_filter: str = request.form['filter']
+
+    task_uuid, qs = start_filter_count_task(
+        dataset_uri=dataset_uri,
+        source_class=source_class,
+        source_path_string=source_path_string,
+        source_filter=source_filter,
+        graph=TASKS_GRAPH
+    )
+    query_sudo(qs)
+    return {
+        'meta': {
+            'task_uuid': task_uuid
+        }
+    }
+
+def run_filter_count_task(input):
+    input_qs = get_filter_count_input(input)
+    input_res = query_sudo(input_qs)
+    input_bindings= input_res["results"]["bindings"][0]
+
+    dataset_uri = input_bindings["dataset"]["value"]
+    source_class = input_bindings["sourceClass"]["value"]
+    source_path_string = input_bindings["sourcePathString"]["value"]
+    source_filter = input_bindings["sourceFilter"]["value"]
 
     from unification import UNUNIFIED_BATCH_TEMPLATE_VARS
     shadowed_vars = [var for var in UNUNIFIED_BATCH_TEMPLATE_VARS if source_filter.find(var) != -1]
@@ -150,33 +213,42 @@ def filter_count():
     if not shadowed_vars == []:
         warning = f"Found vars in your filter that overlap with internally used vars. This could lead to unexpected behaviour: {', '.join(shadowed_vars)}"
 
-    temp_named_graph = build_temp_graph([dataset_uri])
+    dataset_graphs, temp_named_graph = build_temp_graphs([dataset_uri])
 
     from SPARQLWrapper.SPARQLExceptions import EndPointInternalError
 
     count_query = count_ununified(
-            source_class, source_path_string, source_filter, temp_named_graph
+            source_class, source_path_string, source_filter, dataset_graphs
         )
     try:
         filter_res = query_sudo(count_query)
     except (EndPointInternalError) as e:
-        return {
-            'meta': {
-                'error': str(e),
-                'query': count_query,
-                'valid': False,
-            }
-        }
+        output_uri, qs = write_filter_count_output(
+                graph=DATA_GRAPH,
+                dataset_uri=dataset_uri,
+                query=count_query.strip(),
+                valid=False,
+                error=str(e),
+        )
+        update_sudo(qs)
+        return output_uri
     finally:
-         drop_graph(temp_named_graph)
+        drop_graph(temp_named_graph)
+        update_sudo(remove_filter_count_input(input_uri=input, graph=DATA_GRAPH))
 
     count = filter_res["results"]["bindings"][0]["count"]["value"]
     count = int(count)
 
-
-    return {
-        'meta': { 'count': count, 'valid': True, 'warning': warning }
-    }
+    output_uri, qs = write_filter_count_output(
+        graph=DATA_GRAPH,
+        dataset_uri=dataset_uri,
+        query=count_query.strip(),
+        valid=True,
+        count=count,
+        warning=warning
+    )
+    update_sudo(qs)
+    return output_uri
 
 
 @app.route("/delete-vocabulary/<vocab_uuid>", methods=("DELETE",))
@@ -205,7 +277,7 @@ def run_scheduled_tasks():
     try:
         while True:
             task_q = find_actionable_task_of_type(
-                [CONT_UN_OPERATION, VOCAB_DELETE_OPERATION, VOCAB_DELETE_WAIT_OPERATION],
+                [CONT_UN_OPERATION, FILTER_COUNT_OPERATION, VOCAB_DELETE_OPERATION, VOCAB_DELETE_WAIT_OPERATION],
                 TASKS_GRAPH)
             task_res = query_sudo(task_q)
             if task_res["results"]["bindings"]:
@@ -226,6 +298,16 @@ def run_scheduled_tasks():
                     similar_tasks,
                     TASKS_GRAPH,
                     lambda sources: [run_vocab_unification(sources[0])],
+                    query_sudo,
+                    update_sudo,
+                )
+            elif task_operation == FILTER_COUNT_OPERATION:
+                logger.debug(f"Running task {task_uri}, operation {task_operation}")
+                logger.debug(f"Updating at the same time: {' | '.join(similar_tasks)}")
+                run_tasks(
+                    similar_tasks,
+                    TASKS_GRAPH,
+                    lambda sources: [run_filter_count_task(sources[0])],
                     query_sudo,
                     update_sudo,
                 )

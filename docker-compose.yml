@@ -139,6 +139,7 @@ services:
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
+      SLEEP_MS_BETWEEN_QUERIES_UNIFY: "2000"
       # FIXME: always run in dev mode to circumvent memory limitations
       MODE: "development"
     restart: always

@@ -88,6 +88,18 @@
           "target": "vocabulary",
           "cardinality": "one",
           "inverse": true
+        },
+        "filter-count-inputs": {
+          "predicate": "ext:dataset",
+          "target": "filter-count-input",
+          "cardinality": "many",
+          "inverse": true
+        },
+        "filter-count-outputs": {
+          "predicate": "ext:dataset",
+          "target": "filter-count-output",
+          "cardinality": "many",
+          "inverse": true
         }
       },
       "features": ["include-uri"],
