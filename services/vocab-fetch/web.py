@@ -20,7 +20,7 @@ from file import file_to_shared_uri, shared_uri_to_path
 from file import construct_get_file_query, construct_insert_file_query
 from task import find_actionable_task_of_type, run_task, find_actionable_task, create_download_task
 from dataset import get_dataset, update_dataset_download, get_dataset_by_uuid
-from ldes_dump import query_outdated_dump_ldes_datasets
+from ldes_dump import query_all_ldes_datasets, query_outdated_dump_ldes_datasets
 from sparql_util import binding_results, serialize_graph_to_sparql, graph_to_file, MU_VIRTUOSO_ENDPOINT
 from format_to_mime import FORMAT_TO_MIME_EXT
 
@@ -149,8 +149,11 @@ def redownload_dataset(dataset_uri):
         # file_uri = graph_to_file(graph, FILES_GRAPH)
         # for LDES the data is automatically reloaded. Dumping to file takes too long. Instead use the LDES-data graph.
         # This means the download job for LDES will automatically succeed.
-        # TODO: This should maybe fire up a recheck in the LDES-consumer?
-        pass
+        # TODO: This should maybe fire up a recheck in the LDES-consumer or check if it is still running?
+        # For now, do a check if the LDES-graph is present. If not, fail the job (as that means a problem with the consumer).
+        dataset_graph = dataset_result['dataset_graph']['value']
+        if not dataset_graph:
+            raise ValueError(f"LDES-graph not found for dataset {dataset_uri}")
     else:
         download_link = dataset_result['download_url']['value']
         file_format = dataset_result['format']['value']
@@ -311,7 +314,9 @@ def run_tasks():
 def update_ldes_dataset_dump():
     logger.info("querying for LDES datasets with updates (requiring an update of their file-dump)")
     # TODO: LDES have no dumps anymore. This should maybe check the last unification job instead.
-    datasets = query_outdated_dump_ldes_datasets()
+    # for now just create download task for every LDES dataset
+    # datasets = query_outdated_dump_ldes_datasets()
+    datasets = query_all_ldes_datasets()
     if datasets:
         logger.info("LDES datasets needing dump update: " + str(datasets))
     else:
@@ -321,7 +326,10 @@ def update_ldes_dataset_dump():
         qs = create_download_task(dataset, TASKS_GRAPH)
         update_sudo(qs)
 
-
+@app.route("/run-update-ldes-dataset-check", methods=["POST"])
+def run_update_ldes_dataset_check():
+    update_ldes_dataset_dump()
+    return "", 200
 
 if UPDATE_DATASET_DUMP_CRON_PATTERN:
     scheduler = BackgroundScheduler()
