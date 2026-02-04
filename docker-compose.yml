@@ -34,7 +34,7 @@ services:
     restart: always
     logging: *default-logging
   database:
-    image: semtech/sparql-parser:0.0.14
+    image: semtech/sparql-parser:0.0.15
     environment:
       MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
     volumes:
@@ -73,7 +73,7 @@ services:
     restart: always
     logging: *default-logging  
   resource:
-    image: semtech/mu-cl-resources:1.23.0
+    image: semtech/mu-cl-resources:1.27.2
     links:
       - database:database
     volumes:
@@ -139,6 +139,7 @@ services:
       MU_SPARQL_ENDPOINT: "http://database:8890/sparql"
       MU_SPARQL_UPDATEPOINT:  "http://triplestore:8890/sparql"
       MU_AUTH_ENDPOINT: "http://database:8890/sparql"
+      SLEEP_MS_BETWEEN_QUERIES_UNIFY: "2000"
       # FIXME: always run in dev mode to circumvent memory limitations
       MODE: "development"
     restart: always
@@ -158,6 +159,7 @@ services:
       MODE: "${MODE:-production}"
       CONSUMER_IMAGE: redpencil/ldes-consumer:0.9.0
       COMPOSE_PROJECT: "vocabserver-app"
+      REMOVE_CONTAINERS_ON_DELETE: "true" # delete containers if dataset gets deleted
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     restart: always

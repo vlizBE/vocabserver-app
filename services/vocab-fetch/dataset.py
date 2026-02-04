@@ -4,6 +4,8 @@ from escape_helpers import sparql_escape_uri, sparql_escape_datetime, sparql_esc
 
 MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
 
+# dataset_graph is the graph created by the LDES-consumer.
+# for datadumps, use data_dump instead.
 def get_dataset(dataset, graph=MU_APPLICATION_GRAPH):
     query_template = Template("""
 PREFIX void: <http://rdfs.org/ns/void#>

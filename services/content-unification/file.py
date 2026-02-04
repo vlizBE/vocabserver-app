@@ -1,10 +1,7 @@
 import os
 from string import Template
 from escape_helpers import sparql_escape_uri, sparql_escape_string, sparql_escape_int, sparql_escape_datetime
-
-MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
-RELATIVE_STORAGE_PATH = os.environ.get("MU_APPLICATION_FILE_STORAGE_PATH", "").rstrip("/")
-STORAGE_PATH = f"/share/{RELATIVE_STORAGE_PATH}"
+from constants import MU_APPLICATION_GRAPH, RELATIVE_STORAGE_PATH, STORAGE_PATH
 
 ############################################################
 # TODO: keep this generic and extract into packaged module later

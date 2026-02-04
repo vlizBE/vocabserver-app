@@ -1,6 +1,11 @@
 export default [
   {
-    match: {},
+    match: {
+      graph: {
+        type: 'uri',
+        value: 'http://mu.semte.ch/graphs/public'
+      }
+    },
     callback: {
       url: 'http://search/update',
       method: 'POST'
@@ -140,7 +145,7 @@ export default [
     options: {
       resourceFormat: "v0.0.1",
       gracePeriod: 1000,
-      ignoreFromSelf: true,
+      ignoreFromSelf: false,
     },
   },
   {

@@ -58,3 +58,25 @@ WHERE
     query_res = query(query_string)
     datasets = binding_results(query_res, "dataset")
     return datasets
+
+def query_all_ldes_datasets():
+    query_string = Template("""
+PREFIX void: <http://rdfs.org/ns/void#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX dct: <http://purl.org/dc/terms/>
+
+SELECT DISTINCT ?dataset
+WHERE {
+    GRAPH $dataset_graph {
+      ?dataset a void:Dataset ;
+      dct:type $ldes_type .
+      ?vocab ext:sourceDataset ?dataset.
+    }
+}
+    """).substitute(
+        ldes_type=sparql_escape_uri(LDES_TYPE),
+        dataset_graph=sparql_escape_uri(VOID_DATASET_GRAPH)
+    )
+    query_res = query(query_string)
+    datasets = binding_results(query_res, "dataset")
+    return datasets

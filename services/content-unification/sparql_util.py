@@ -9,11 +9,11 @@ from string import Template
 from more_itertools import batched
 from rdflib.graph import Graph
 from rdflib.term import URIRef, Literal
+from constants import MU_APPLICATION_GRAPH
 
 TEMP_GRAPH_BASE = 'http://example-resource.com/graph/'
-MU_APPLICATION_GRAPH = os.environ.get("MU_APPLICATION_GRAPH")
-
 BATCH_SIZE = 100
+
 # adapted from https://github.com/RDFLib/rdflib/issues/1704
 def serialize_graph_to_sparql(g, graph_name: str, operation="INSERT"):
     # Note that the Graph triples method yields triples in random order
@@ -34,11 +34,16 @@ def json_to_term(json_term):
     else:
         if 'xml:lang' in json_term:  # SELECT
             lang = json_term['xml:lang']
+            return Literal(json_term['value'], lang=lang)
         elif 'lang' in json_term:  # CONSTRUCT
             lang = json_term['lang']
+            return Literal(json_term['value'], lang=lang)
         else:
-            lang = None
-        return Literal(json_term['value'], lang=lang)
+            if 'datatype' in json_term:
+                return Literal(json_term['value'], datatype=json_term['datatype'])
+            else:
+                return Literal(json_term['value'])
+        
 
 def sparql_construct_res_to_graph(res):
     """ Turn results of a sparql construct query into an rdflib graph """
